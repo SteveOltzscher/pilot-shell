@@ -1,15 +1,22 @@
+import { lazy, Suspense } from "react";
 import NavBar from "@/components/NavBar";
 import HeroSection from "@/components/HeroSection";
 import InstallSection from "@/components/InstallSection";
-import WorkflowSteps from "@/components/WorkflowSteps";
-import WhatsInside from "@/components/WhatsInside";
-import ConsoleSection from "@/components/ConsoleSection";
-import DemoSection from "@/components/DemoSection";
-import PricingSection from "@/components/PricingSection";
-import TestimonialsSection from "@/components/TestimonialsSection";
-import FAQSection from "@/components/FAQSection";
-import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
+
+// Below-the-fold sections — split into separate chunks loaded after first paint.
+const WorkflowSteps = lazy(() => import("@/components/WorkflowSteps"));
+const WhatsInside = lazy(() => import("@/components/WhatsInside"));
+const ConsoleSection = lazy(() => import("@/components/ConsoleSection"));
+const DemoSection = lazy(() => import("@/components/DemoSection"));
+const PricingSection = lazy(() => import("@/components/PricingSection"));
+const TestimonialsSection = lazy(() => import("@/components/TestimonialsSection"));
+const FAQSection = lazy(() => import("@/components/FAQSection"));
+const Footer = lazy(() => import("@/components/Footer"));
+
+// Reserve space while a chunk is in flight. The exact height isn't critical
+// since CLS is already 0 — but a placeholder avoids a brief jump.
+const SectionFallback = () => <div aria-hidden="true" style={{ minHeight: "40vh" }} />;
 
 const Index = () => {
   const websiteStructuredData = {
@@ -88,14 +95,16 @@ const Index = () => {
       <main className="min-h-screen bg-background">
         <HeroSection />
         <InstallSection />
-        <WhatsInside />
-        <WorkflowSteps />
-        <ConsoleSection />
-        <PricingSection />
-        <TestimonialsSection />
-        <DemoSection />
-        <FAQSection />
-        <Footer />
+        <Suspense fallback={<SectionFallback />}>
+          <WhatsInside />
+          <WorkflowSteps />
+          <ConsoleSection />
+          <PricingSection />
+          <TestimonialsSection />
+          <DemoSection />
+          <FAQSection />
+          <Footer />
+        </Suspense>
       </main>
     </>
   );

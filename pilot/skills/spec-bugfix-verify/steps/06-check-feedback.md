@@ -4,7 +4,9 @@
 
 Derive the annotation file path: `docs/plans/.annotations/<plan-filename>.json` (same basename as the plan, `.json` extension).
 
-Read the annotation file with the Read tool. If the file doesn't exist, treat as `NO_FEEDBACK`. If it exists, check whether `codeReviewAnnotations` has any entries (`FEEDBACK_EXISTS`) or is empty/missing (`NO_FEEDBACK`).
+Read the annotation file with the Read tool. If the file doesn't exist, treat as `NO_ANNOTATIONS_FOUND`. If it exists, check whether `codeReviewAnnotations` has any entries (`ANNOTATIONS_FOUND`) or is empty/missing (`NO_ANNOTATIONS_FOUND`).
 
-**If `FEEDBACK_EXISTS`:** Each annotation in `codeReviewAnnotations` has `filePath`, `lineStart`, `text`. Fix all issues, delete the annotation file via `rm -f "<annotation-file-path>"` (e.g. `rm -f "docs/plans/.annotations/2026-03-26-my-bug.json"`), re-run tests, continue to Step 7.
-**If `NO_FEEDBACK`:** continue to Step 7.
+**⛔ Absence of annotations ≠ approval.** Annotations are an *optional* inline channel; most users approve verbally via Step 7. Never collapse Step 6 → Step 8 because the file is missing or empty.
+
+**If `ANNOTATIONS_FOUND`:** Each annotation in `codeReviewAnnotations` has `filePath`, `lineStart`, `text`. Fix all issues, delete the annotation file via `rm -f "<annotation-file-path>"` (e.g. `rm -f "docs/plans/.annotations/2026-03-26-my-bug.json"`), re-run tests, continue to Step 7.
+**If `NO_ANNOTATIONS_FOUND`:** continue to Step 7. **You still MUST run Step 7 (the human gate).**

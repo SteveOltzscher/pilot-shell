@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,8 +10,9 @@ import { SpeedInsights } from "@vercel/speed-insights/react";
 import ScrollToTop from "@/components/ScrollToTop";
 import ScrollToHash from "@/components/ScrollToHash";
 import Index from "./pages/Index";
-import Shared from "./pages/Shared";
-import NotFound from "./pages/NotFound";
+
+const Shared = lazy(() => import("./pages/Shared"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
@@ -23,13 +25,15 @@ const App = () => (
         <BrowserRouter>
           <ScrollToTop />
           <ScrollToHash />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/shared" element={<Shared />} />
-            {/* /docs is served by Docusaurus static files */}
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={null}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/shared" element={<Shared />} />
+              {/* /docs is served by Docusaurus static files */}
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
         <Analytics />
         <SpeedInsights />

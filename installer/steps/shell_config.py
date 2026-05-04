@@ -11,9 +11,18 @@ from installer.steps.base import BaseStep
 OLD_CCP_MARKER = "# Claude CodePro alias"
 OLD_CLAUDE_PILOT_MARKER = "# Claude Pilot"
 CLAUDE_ALIAS_MARKER = "# Pilot Shell"
+MANAGED_ELSEWHERE_MARKER = "# pilot-shell:managed-elsewhere"
 PILOT_BIN = "$HOME/.pilot/bin/pilot"
 PILOT_BIN_DIR = "$HOME/.pilot/bin"
 BUN_BIN_PATH = "$HOME/.bun/bin"
+
+
+def is_managed_elsewhere(config_file: Path) -> bool:
+    """Return True if the config file carries the opt-out marker."""
+    if not config_file.exists():
+        return False
+    content = config_file.read_text(errors="replace")
+    return MANAGED_ELSEWHERE_MARKER in content
 
 
 def get_alias_lines(shell_type: str) -> str:
@@ -159,6 +168,11 @@ class ShellConfigStep(BaseStep):
 
         for config_file in config_files:
             if not config_file.exists():
+                continue
+
+            if is_managed_elsewhere(config_file):
+                if ui:
+                    ui.success(f"Skipping {config_file.name} (managed elsewhere)")
                 continue
 
             alias_existed = alias_exists_in_file(config_file)

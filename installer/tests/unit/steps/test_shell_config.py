@@ -90,6 +90,32 @@ class TestShellConfigStep:
             assert "alias pilot=" in content
 
     @patch("installer.steps.shell_config.get_shell_config_files")
+    def test_shell_config_run_skips_file_with_managed_elsewhere_marker(self, mock_get_files):
+        """ShellConfigStep.run leaves a config file untouched when it carries the opt-out marker."""
+        from installer.context import InstallContext
+        from installer.ui import Console
+
+        step = ShellConfigStep()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            zshrc = Path(tmpdir) / ".zshrc"
+            original = "# pilot-shell:managed-elsewhere\n# my framework owns this file\nsource ~/.zshand/init.zsh\n"
+            zshrc.write_text(original)
+            mock_get_files.return_value = [zshrc]
+
+            ctx = InstallContext(
+                project_dir=Path(tmpdir),
+                ui=Console(non_interactive=True),
+            )
+
+            step.run(ctx)
+
+            content = zshrc.read_text()
+            assert content == original
+            assert CLAUDE_ALIAS_MARKER not in content
+            assert "alias pilot=" not in content
+            assert str(zshrc) not in ctx.config.get("modified_shell_configs", [])
+
+    @patch("installer.steps.shell_config.get_shell_config_files")
     def test_shell_config_upgrades_old_bun_only_path(self, mock_get_files):
         """ShellConfigStep upgrades old config with only .bun/bin to include .pilot/bin."""
         from installer.context import InstallContext

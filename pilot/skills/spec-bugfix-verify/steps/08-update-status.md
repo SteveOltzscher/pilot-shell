@@ -1,5 +1,13 @@
 ## Step 8: Update Plan Status
 
+### ⛔ Precondition Gate — verify ALL THREE before writing `Status: VERIFIED`
+
+1. `AskUserQuestion` was called in **this same conversation turn flow** as part of Step 7 (not a previous, abandoned one).
+2. The user's most recent reply contains one of the **explicit approve keywords**: `Approve`, `approve`, `lgtm`, `looks good`, `continue`, `proceed`.
+3. That reply arrived **after** the AskUserQuestion call — not before, not as a stale message.
+
+If any of the three is false → return to Step 7 and re-ask. Common traps that DO NOT count as approval: "no annotations in file", "all tests pass", "user has been idle", "session was resumed", "user said 'thanks'/'ok'/anything else."
+
 **All passes and user approves:** Set `Status: VERIFIED`, register:
 ```bash
 ~/.pilot/bin/pilot register-plan "<plan_path>" "VERIFIED" 2>/dev/null || true

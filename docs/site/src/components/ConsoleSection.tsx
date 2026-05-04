@@ -5,65 +5,78 @@ import ImageModal from "@/components/ImageModal";
 const consoleSlides = [
   {
     label: "Dashboard",
-    src: "/console/dashboard.png",
+    src: "/console/dashboard.webp",
+    thumb: "/console/thumbs/dashboard.webp",
     alt: "Console Dashboard — stats, recent specifications, sessions, requirements, memories",
     desc: "Global command center with 8 clickable stat cards and 4 recent cards (Specifications, Requirements, Sessions, Memories) with quick navigation. Active specs as pills in the top bar, notification bell in top right.",
   },
   {
     label: "Sessions",
-    src: "/console/sessions.png",
+    src: "/console/sessions.webp",
+    thumb: "/console/thumbs/sessions.webp",
     alt: "Sessions view — browse, search, and resume past sessions",
     desc: "Browse and search past sessions. Copy the Claude Code session ID and use /resume to jump back into any session instantly.",
   },
   {
     label: "Memories",
-    src: "/console/memories.png",
+    src: "/console/memories.webp",
+    thumb: "/console/thumbs/memories.webp",
     alt: "Memories view — captured decisions and patterns with semantic search",
     desc: "Decisions, discoveries, and patterns captured automatically. Each memory links to its session — click to navigate. Semantic search across all memories.",
   },
   {
     label: "Extensions",
-    src: "/console/extensions.png",
+    src: "/console/extensions.webp",
+    thumb: "/console/thumbs/extensions.webp",
     alt: "Extensions view — local, plugin, and remote extensions with team sharing",
     desc: "Browse, edit, and share extensions across global, project, plugin, and remote scopes. Team sharing via git with push, pull, and diff.",
   },
   {
     label: "Requirements",
-    src: "/console/requirements.png",
+    src: "/console/requirements.webp",
+    thumb: "/console/thumbs/requirements.webp",
     alt: "Requirements view — PRD brainstorming, research tiers, and requirement tracking",
     desc: "Brainstorm vague ideas into Product Requirements Documents through back-and-forth conversation. Tiered deep research, requirement tracking, and team sharing.",
   },
   {
     label: "Specifications",
-    src: "/console/specifications.png",
+    src: "/console/specifications.webp",
+    thumb: "/console/thumbs/specifications.webp",
     alt: "Specification view — plan annotation, task progress, and phase tracking",
     desc: "All spec plans with task progress, phase tracking, and iteration history. Annotate mode lets you mark up plans visually — select any text and write a note.",
   },
   {
     label: "Changes",
-    src: "/console/changes.png",
+    src: "/console/changes.webp",
+    thumb: "/console/thumbs/changes.webp",
     alt: "Changes view — git diff, staged files, code review annotations",
     desc: "Git changes, staged files, and diff viewer with branch and worktree context. Review mode adds inline annotations on diff lines.",
   },
   {
     label: "Usage",
-    src: "/console/usage.png",
+    src: "/console/usage.webp",
+    thumb: "/console/thumbs/usage.webp",
     alt: "Usage view — daily costs, token charts, and model routing",
     desc: "Daily token costs, model routing breakdown, and usage trends over time.",
   },
   {
     label: "Settings",
-    src: "/console/settings.png",
+    src: "/console/settings.webp",
+    thumb: "/console/thumbs/settings.webp",
     alt: "Settings view — model selection per command, spec workflow toggles",
     desc: "Choose models per command and sub-agent. Spec workflow toggles, reviewer configuration, and pricing info.",
   },
   {
     label: "Help",
-    src: "/console/help.png",
+    src: "/console/help.webp",
+    thumb: "/console/thumbs/help.webp",
     alt: "Help view — embedded documentation and quick-start guides",
     desc: "Embedded documentation from pilot-shell.com — full technical reference without leaving the Console.",
   },
 ];
+
+const SLIDE_W = 1920;
+const SLIDE_H = 1396;
 
 const ConsoleSection = () => {
   const [ref, inView] = useInView<HTMLDivElement>();
@@ -91,11 +104,16 @@ const ConsoleSection = () => {
 
           <div className="max-w-4xl mx-auto">
             {/* Main image */}
-            <div className="rounded-xl overflow-hidden border border-border/50">
+            <div
+              className="rounded-xl overflow-hidden border border-border/50"
+              style={{ aspectRatio: `${SLIDE_W} / ${SLIDE_H}` }}
+            >
               <ImageModal
                 src={slide.src}
                 alt={slide.alt}
-                className="w-full rounded-xl"
+                className="w-full h-auto rounded-xl"
+                width={SLIDE_W}
+                height={SLIDE_H}
               />
             </div>
 
@@ -115,7 +133,10 @@ const ConsoleSection = () => {
               {consoleSlides.map((s, i) => (
                 <button
                   key={i}
+                  type="button"
                   onClick={() => setIndex(i)}
+                  aria-label={`Show ${s.label} screenshot`}
+                  aria-pressed={i === index}
                   className={`group/thumb relative rounded-lg overflow-hidden border-2 transition-all duration-200
                     ${
                       i === index
@@ -124,10 +145,13 @@ const ConsoleSection = () => {
                     }`}
                 >
                   <img
-                    src={s.src}
-                    alt={s.label}
-                    className="w-full rounded-md"
+                    src={s.thumb}
+                    alt=""
+                    className="w-full h-auto rounded-md"
                     loading="lazy"
+                    decoding="async"
+                    width={280}
+                    height={204}
                   />
                   <div
                     className={`absolute inset-x-0 bottom-0 py-0.5 text-[8px] sm:text-[10px] font-medium text-center

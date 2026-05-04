@@ -31,7 +31,25 @@ Pick the tool that gives the most accurate verification for the situation, not t
 2. **Chrome DevTools MCP:** `mcp__plugin_chrome-devtools-mcp_chrome-devtools__*` in your tools list.
 3. **playwright-cli / agent-browser:** `which playwright-cli` / `which agent-browser` (installed by Pilot Shell).
 
-**Fallback chain:** Claude Code Chrome → Chrome DevTools MCP → playwright-cli or agent-browser.
+**Fallback chain:** Claude Code Chrome → Chrome DevTools MCP → playwright-cli → agent-browser.
+
+### ⛔ E2E Hard Rules — read before claiming "verified"
+
+**1. Tier error → next tier in the chain. Period.**
+If tier N errors (e.g., Chrome DevTools MCP "no Chrome binary"), the ONLY allowed next step is tier N+1. Never substitute a non-browser tool. If tiers 1–4 all fail, STOP and tell the user — do not claim E2E.
+
+**Forbidden as E2E substitutes** (each only proves what's in parentheses, not user behavior):
+`web-fetch` / `fetch_url` / `curl` (SSR HTML ships) · reading source files (code exists) · API 200s (backend works) · typecheck / unit tests (code shape) · "no console errors on load" (page parsed).
+
+**2. E2E = interaction, not load.**
+For every user-facing path the change touches, you MUST: snapshot → **click the primary action** (button, link, form submit) → re-snapshot → confirm new state. No click + re-snapshot pair = not E2E.
+
+**3. Self-check before saying "verified" / "works" / "done":**
+- [ ] Used a tier 1–4 tool (named one)?
+- [ ] Actually clicked the thing the change affects?
+- [ ] Re-snapshotted and saw the expected new state?
+
+Any "no" → not verified. Say so explicitly; do not claim done.
 
 ### Common Workflow Shape (all tools)
 

@@ -4,8 +4,6 @@ import { Github, Menu, X, ScrollText, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { navigateToSection } from "@/utils/navigateToSection";
 import { useTheme } from "@/hooks/useTheme";
-import boxWebp from "@/assets/box.webp";
-import boxPng from "@/assets/box.png";
 
 const navLinks = [
   { label: "Getting Started", href: "#installation" },
@@ -34,17 +32,16 @@ const NavBar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex justify-between items-center">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 sm:gap-3">
-          <picture>
-            <source srcSet={boxWebp} type="image/webp" />
-            <img
-              src={boxPng}
-              alt="Pilot Shell"
-              className="h-8 sm:h-10 w-auto rounded-md border border-primary/20"
-              width={128}
-              height={128}
-            />
-          </picture>
+        <Link to="/" aria-label="Pilot Shell home" className="flex items-center gap-2 sm:gap-3">
+          <img
+            src="/box.webp"
+            alt="Pilot Shell"
+            className="h-8 sm:h-10 w-auto rounded-md border border-primary/20"
+            width={40}
+            height={40}
+            decoding="async"
+            fetchPriority="high"
+          />
         </Link>
 
         {/* Desktop Navigation */}
@@ -77,8 +74,9 @@ const NavBar = () => {
             rel="noopener noreferrer"
             className="text-muted-foreground hover:text-foreground transition-colors"
             title="Changelog"
+            aria-label="Changelog (opens in new tab)"
           >
-            <ScrollText className="h-5 w-5" />
+            <ScrollText className="h-5 w-5" aria-hidden="true" />
           </a>
           <a
             href="https://github.com/maxritter/pilot-shell"
@@ -86,18 +84,21 @@ const NavBar = () => {
             rel="noopener noreferrer"
             className="text-muted-foreground hover:text-foreground transition-colors"
             title="GitHub"
+            aria-label="GitHub repository (opens in new tab)"
           >
-            <Github className="h-5 w-5" />
+            <Github className="h-5 w-5" aria-hidden="true" />
           </a>
           <button
+            type="button"
             onClick={toggleTheme}
             className="text-muted-foreground hover:text-foreground transition-colors"
             title={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            aria-label={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           >
             {resolvedTheme === "dark" ? (
-              <Sun className="h-5 w-5" />
+              <Sun className="h-5 w-5" aria-hidden="true" />
             ) : (
-              <Moon className="h-5 w-5" />
+              <Moon className="h-5 w-5" aria-hidden="true" />
             )}
           </button>
           <Button
@@ -108,13 +109,16 @@ const NavBar = () => {
             Get Started
           </Button>
           <button
+            type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden text-foreground p-2"
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? (
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5" aria-hidden="true" />
             ) : (
-              <Menu className="h-5 w-5" />
+              <Menu className="h-5 w-5" aria-hidden="true" />
             )}
           </button>
         </div>

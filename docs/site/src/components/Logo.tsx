@@ -1,6 +1,3 @@
-import logoWebp from "@/assets/logo.webp";
-import logoPng from "@/assets/logo.png";
-
 interface LogoProps {
   variant?: "hero" | "footer";
 }
@@ -15,18 +12,16 @@ const Logo = ({ variant = "hero" }: LogoProps) => {
 
   return (
     <div className={`inline-block ${paddingClass}`}>
-      <picture>
-        <source srcSet={logoWebp} type="image/webp" />
-        <img
-          src={logoPng}
-          alt="Pilot Shell — the Claude Code engineering platform"
-          className={`${sizeClass} h-auto animate-glow`}
-          loading={isEager ? "eager" : "lazy"}
-          fetchPriority={isEager ? "high" : undefined}
-          width={1200}
-          height={676}
-        />
-      </picture>
+      <img
+        src="/logo.webp"
+        alt="Pilot Shell — the Claude Code engineering platform"
+        className={`${sizeClass} h-auto animate-glow`}
+        loading={isEager ? "eager" : "lazy"}
+        decoding={isEager ? "sync" : "async"}
+        fetchPriority={isEager ? "high" : "low"}
+        width={1228}
+        height={691}
+      />
     </div>
   );
 };

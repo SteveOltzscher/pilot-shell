@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Check, Copy, Terminal, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useInView } from "@/hooks/use-in-view";
-import ImageModal from "@/components/ImageModal";
 
 const InstallSection = () => {
   const [copied, setCopied] = useState(false);
@@ -109,13 +108,26 @@ const InstallSection = () => {
           </div>
         </div>
 
-        {/* Demo GIF */}
-        <div className="mt-10 rounded-xl overflow-hidden border border-border/50">
-          <ImageModal
-            src="/demo.gif"
-            alt="Pilot Shell in action — spec-driven development with Claude Code"
-            className="w-full"
-          />
+        {/* Demo video — replaces a 2.5MB GIF for ~700KB of MP4/WebM */}
+        <div
+          className="mt-10 rounded-xl overflow-hidden border border-border/50"
+          style={{ aspectRatio: "960 / 540" }}
+        >
+          <video
+            className="w-full h-auto block"
+            width={960}
+            height={540}
+            poster="/demo-poster.webp"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="none"
+            aria-label="Pilot Shell in action — spec-driven development with Claude Code"
+          >
+            <source src="/demo.webm" type="video/webm" />
+            <source src="/demo.mp4" type="video/mp4" />
+          </video>
         </div>
       </div>
     </section>

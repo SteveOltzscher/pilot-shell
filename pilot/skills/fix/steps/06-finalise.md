@@ -21,20 +21,18 @@ When approval is enabled, summarise + ask:
 
 ```
 AskUserQuestion(
-  question="Bugfix complete.\n\n**Bug:** <one line>\n**Root cause:** `<file>:<line>` — <what>\n**Fix:** <one-line description of the change>\n**Tests:** reproducing test added (`<test_name>`), full suite green.\n**E2E:** <command/URL you ran and the concrete observation that proves the fix — e.g. 'curl /search -d {} → 200 with [results]', 'opened /tasks page, saved end_date=2026-05-15, list shows 2026-05-15', 'ran pilot register-plan ./foo.md PENDING → exit 0, plan visible in console'>\n\nReview the diff in the Console's Changes tab. Approve when ready:",
+  question="Bugfix complete.\n\nBug: <one line>\nRoot cause: <file>:<line> — <what>\nFix: <one-line description of the change>\nTests: reproducing test added (<test_name>), full suite green.\nE2E: <command/URL you ran and the concrete observation that proves the fix — e.g. 'curl /search -d {} → 200 with [results]', 'opened /tasks page, saved end_date=2026-05-15, list shows 2026-05-15', 'ran pilot register-plan ./foo.md PENDING → exit 0, plan visible in console'>\n\nReview the diff in the Console's Changes tab. Approve when ready.",
   options=[
     "Approve — done",
-    "Issues — describe them, I'll address",
-    "Manual — let me test, I'll come back"
+    "Request changes"
   ]
 )
 ```
 
 Handle:
 
-- **Approve** → done.
-- **Issues** → user describes problem. Treat as a new investigation: re-run Step 1.3 (re-trace) → Step 2 onward.
-- **Manual** → ask once more (`AskUserQuestion` for the stop-guard) and wait. On user return, treat new content as either approval or new issues.
+- Approve → done.
+- Request changes → user describes problem in free-form. Treat as a new investigation: re-run Step 1.3 (re-trace) → Step 2 onward.
 
 ### 6.3 Console notification (always, when binary present)
 
