@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-CURRENT_CONFIG_VERSION = 9
+CURRENT_CONFIG_VERSION = 10
 
 _STALE_AGENT_KEYS = frozenset(
     {
@@ -76,6 +76,9 @@ def migrate_model_config(config_path: Path | None = None) -> bool:
 
     if version < 9:
         modified = _migration_v9(raw) or modified
+
+    if version < 10:
+        modified = _migration_v10(raw) or modified
 
     if raw.get("_configVersion") != CURRENT_CONFIG_VERSION:
         raw["_configVersion"] = CURRENT_CONFIG_VERSION
@@ -397,6 +400,48 @@ def _migration_v9(raw: dict[str, Any]) -> bool:
         if current in ("opus", None):
             skills[skill_name] = "sonnet"
             modified = True
+
+    return modified
+
+
+_ALIAS_NAMES = ("opus", "sonnet")
+
+
+def _migration_v10(raw: dict[str, Any]) -> bool:
+    """v9 → v10: Strip alias [1m] suffix from `model` and `skills.<key>`.
+
+    Issue #139: per-phase 1M context routes alias 1M through the
+    `extendedContextOverrides` map, not the model literal. Legacy configs may
+    contain `model: "opus[1m]"` or `skills.<key>: "sonnet[1m]"` from earlier
+    versions. Normalize them to plain aliases. Explicit-ID `[1m]`
+    (e.g. `claude-opus-4-7[1m]`) is preserved verbatim — Custom users encode
+    their context window in the ID itself. Agents are not touched (no
+    historical [1m] usage; out of scope for this issue).
+    """
+
+    def strip_alias_1m(value: Any) -> tuple[Any, bool]:
+        if not isinstance(value, str) or not value.endswith("[1m]"):
+            return value, False
+        base = value[:-4]
+        if base in _ALIAS_NAMES:
+            return base, True
+        return value, False
+
+    modified = False
+
+    if "model" in raw:
+        new_val, changed = strip_alias_1m(raw["model"])
+        if changed:
+            raw["model"] = new_val
+            modified = True
+
+    skills = raw.get("skills")
+    if isinstance(skills, dict):
+        for k in list(skills.keys()):
+            new_val, changed = strip_alias_1m(skills[k])
+            if changed:
+                skills[k] = new_val
+                modified = True
 
     return modified
 

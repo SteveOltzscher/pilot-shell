@@ -8,7 +8,7 @@ description: Keep the Claude context window lean and recover cleanly when it fil
 
 Two things matter for a long-running Claude session: keeping the context window lean so tokens go to your code, and handling the moments when it fills up anyway.
 
-With 1M context windows (API subscribers on Team and Enterprise get this on all models; Max plan users must set all models to Opus), compaction is rare — most sessions complete well within the available context. Pilot Shell's strategies focus on **staying lean**, and making **compaction and parallel work** painless when they happen.
+With 1M context windows (API subscribers on Team and Enterprise get this on all models; Max plan users can opt into 1M per-row on Opus rows — see [Smart Model Routing](./model-routing.md)), compaction is rare — most sessions complete well within the available context. Pilot Shell's strategies focus on **staying lean**, and making **compaction and parallel work** painless when they happen.
 
 ## Keeping context lean
 

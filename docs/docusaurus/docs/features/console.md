@@ -116,9 +116,13 @@ Choose between **Sonnet 4.6** ($3/$15 per MTok) and **Opus 4.7** ($5/$25 per MTo
 | **Implementation** | Sonnet | TDD loop — write test, write code, verify |
 | **Verification** | Sonnet | Test execution, code review orchestration |
 
-**Custom model IDs** — each dropdown also offers a **Custom…** option. Selecting it reveals a text input where you can pin an explicit Anthropic model ID such as `claude-opus-4-6`, `claude-opus-4-5`, or `claude-sonnet-4-5-20250929`. Useful for reproducibility, team standardization, or falling back to an older model when a newer release mis-triggers content filters on legitimate code. The value is passed through to Claude Code verbatim.
+**Custom model IDs** — each dropdown also offers a **Custom…** option. Selecting it reveals a text input where you can pin an explicit Anthropic model ID such as `claude-opus-4-6`, `claude-opus-4-5`, or `claude-sonnet-4-5-20250929`. Useful for reproducibility, team standardization, or falling back to an older model when a newer release mis-triggers content filters on legitimate code. The value is passed through to Claude Code verbatim. Custom IDs may carry the `[1m]` suffix (e.g. `claude-opus-4-7[1m]`) — the per-row 1M checkbox is disabled for Custom rows because the ID itself encodes the context window.
 
-**Extended Context (1M):** toggle for the 1M token context window instead of 200K. API subscribers (Team, Enterprise) get this at no additional cost with all models. Max plan users must set all models to Opus — Sonnet 1M is not included in Max. The toggle only applies to the `sonnet` and `opus` aliases; custom model IDs are sent verbatim, so pick the concrete ID for the context window you want.
+**Extended Context (1M):** the global toggle is the **default** for every row in the Model Preferences table that doesn't carry a per-row override. Each main-and-skill row also has a **per-row 1M checkbox**, so you can mix freely — e.g. *Opus 1M for planning, Sonnet 200K for implementation/verification* on Max plan without API billing. The toggle only applies to the `sonnet` and `opus` aliases; Custom rows are greyed out (their suffix encodes the context window).
+
+API subscribers (Team, Enterprise) get 1M at no additional cost with all models. Max plan users must use Opus for any row that wants 1M — Sonnet 1M is not included in the Max plan.
+
+**Per-row overrides on disk** — overrides are stored in the `extendedContextOverrides` map (see config example below). Keys are `main` or skill names (e.g. `spec-plan`, `spec-implement`). A missing key falls back to the global `extendedContext` flag. An empty map preserves pre-#139 behaviour exactly.
 
 ### Review agents
 
@@ -160,7 +164,11 @@ All settings are stored in `~/.pilot/config.json`:
 {
   "model": "opus",
   "extendedContext": true,
-  "commands": {
+  "extendedContextOverrides": {
+    "spec-plan": true,
+    "spec-implement": false
+  },
+  "skills": {
     "spec-plan": "opus",
     "spec-implement": "sonnet",
     "spec-verify": "sonnet",
@@ -187,5 +195,7 @@ All settings are stored in `~/.pilot/config.json`:
   }
 }
 ```
+
+`extendedContextOverrides` is keyed by the skill's filesystem name (e.g. `spec-plan`); the launcher also accepts the resolved alias (e.g. `spec-bugfix-plan` → `spec-plan`) on lookup miss for forward-compat. Omit the key to inherit the global `extendedContext` default. Agents intentionally cannot opt into 1M — sub-agents do not support extended context.
 
 You can edit this file directly — the Settings UI is a convenience wrapper. Changes require a Claude Code restart.

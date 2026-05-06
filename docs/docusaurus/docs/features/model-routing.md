@@ -27,7 +27,7 @@ Pilot automatically routes each phase to the right model. Rather than always usi
 - The result: better output at lower cost than running Opus everywhere
 
 :::tip Fully configurable
-Configure via the Pilot Shell Console Settings tab (`localhost:41777/#/settings`, or your custom port). Choose between Sonnet 4.6 and Opus 4.7 for the main session, each command, and each sub-agent independently. Context window size (200K or 1M) is configurable via the Extended Context toggle. API subscribers (Team, Enterprise) get 1M at no additional cost with all models. Max plan users must set all models to Opus — Sonnet 1M is not included in Max.
+Configure via the Pilot Shell Console Settings tab (`localhost:41777/#/settings`, or your custom port). Choose between Sonnet 4.6 and Opus 4.7 for the main session, each command, and each sub-agent independently. Context window size (200K or 1M) is configurable via the Extended Context global toggle plus a per-row 1M checkbox on every main and skill row — mix freely (e.g. Opus 1M for planning, Sonnet 200K for implementation/verification). API subscribers (Team, Enterprise) get 1M at no additional cost with all models. Max plan users on Sonnet rows must keep 1M off (Sonnet 1M is not included in Max); Opus rows can opt into 1M without API billing.
 :::
 
 ## Pinning a Legacy or Specific Model Version
@@ -43,4 +43,4 @@ Accepted values:
 - Any alias supported by Claude Code — currently `sonnet` and `opus`.
 - Any explicit Anthropic model ID matching `claude-<suffix>` (e.g. `claude-opus-4-6`, `claude-haiku-4-5`).
 
-The Extended Context (`1M`) toggle only applies to the `sonnet` and `opus` aliases — explicit model IDs are passed through to Claude Code exactly as entered, so pick the concrete ID for the context window you want.
+The Extended Context (`1M`) global toggle and per-row checkboxes only apply to the `sonnet` and `opus` aliases — explicit model IDs are passed through to Claude Code exactly as entered. For a Custom row, encode the context window in the ID itself (e.g. `claude-opus-4-7[1m]`); the per-row 1M checkbox is disabled for Custom rows because the ID is authoritative.

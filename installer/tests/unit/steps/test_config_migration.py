@@ -1305,3 +1305,111 @@ class TestMigrationV9:
             _migration_v9(raw)
 
         assert "spec-bugfix-verify" not in raw["skills"]
+
+
+class TestMigrationV10:
+    """Migration v9 → v10: Issue #139 — strip alias [1m] from disk; preserve explicit-id [1m]."""
+
+    def test_current_version_is_10(self) -> None:
+        from installer.steps.config_migration import CURRENT_CONFIG_VERSION
+
+        assert CURRENT_CONFIG_VERSION == 10
+
+    def test_strips_alias_1m_from_main_model(self) -> None:
+        from installer.steps.config_migration import _migration_v10
+
+        raw: dict = {"model": "opus[1m]"}
+        modified = _migration_v10(raw)
+
+        assert modified is True
+        assert raw["model"] == "opus"
+
+    def test_strips_alias_1m_from_skills(self) -> None:
+        from installer.steps.config_migration import _migration_v10
+
+        raw: dict = {
+            "skills": {
+                "spec-plan": "sonnet[1m]",
+                "spec-implement": "opus[1m]",
+                "spec-verify": "sonnet",
+            }
+        }
+        modified = _migration_v10(raw)
+
+        assert modified is True
+        assert raw["skills"]["spec-plan"] == "sonnet"
+        assert raw["skills"]["spec-implement"] == "opus"
+        assert raw["skills"]["spec-verify"] == "sonnet"
+
+    def test_preserves_explicit_id_1m_in_main_model(self) -> None:
+        """Issue #139: <explicit-id>[1m] (e.g. claude-opus-4-7[1m]) preserved verbatim."""
+        from installer.steps.config_migration import _migration_v10
+
+        raw: dict = {"model": "claude-opus-4-7[1m]"}
+        modified = _migration_v10(raw)
+
+        assert modified is False
+        assert raw["model"] == "claude-opus-4-7[1m]"
+
+    def test_preserves_explicit_id_1m_in_skills(self) -> None:
+        from installer.steps.config_migration import _migration_v10
+
+        raw: dict = {"skills": {"spec-plan": "claude-opus-4-7[1m]"}}
+        modified = _migration_v10(raw)
+
+        assert modified is False
+        assert raw["skills"]["spec-plan"] == "claude-opus-4-7[1m]"
+
+    def test_does_not_touch_agents(self) -> None:
+        """Issue #139: agents are out of scope; migration leaves any [1m] alone."""
+        from installer.steps.config_migration import _migration_v10
+
+        raw: dict = {"agents": {"spec-review": "sonnet[1m]"}}
+        modified = _migration_v10(raw)
+
+        assert modified is False
+        assert raw["agents"]["spec-review"] == "sonnet[1m]"
+
+    def test_noop_when_no_1m_anywhere(self) -> None:
+        from installer.steps.config_migration import _migration_v10
+
+        raw: dict = {"model": "opus", "skills": {"spec-plan": "sonnet"}}
+        modified = _migration_v10(raw)
+
+        assert modified is False
+
+    def test_full_migration_strips_legacy_1m_and_bumps_version(self, tmp_path: Path) -> None:
+        """End-to-end: a v9 config with legacy alias [1m] reaches v10 with stripped values."""
+        from installer.steps.config_migration import CURRENT_CONFIG_VERSION, migrate_model_config
+
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "_configVersion": 9,
+                    "model": "opus[1m]",
+                    "skills": {"spec-plan": "sonnet[1m]"},
+                }
+            )
+        )
+
+        result = migrate_model_config(config_path)
+
+        assert result is True
+        migrated = json.loads(config_path.read_text())
+        assert migrated["model"] == "opus"
+        assert migrated["skills"]["spec-plan"] == "sonnet"
+        assert migrated["_configVersion"] == CURRENT_CONFIG_VERSION
+        assert CURRENT_CONFIG_VERSION == 10
+
+    def test_v10_idempotent(self, tmp_path: Path) -> None:
+        """Re-running migrate on a v10 config is a no-op."""
+        from installer.steps.config_migration import migrate_model_config
+
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps({"_configVersion": 10, "model": "opus", "skills": {"spec-plan": "sonnet"}})
+        )
+
+        result = migrate_model_config(config_path)
+        assert result is False
