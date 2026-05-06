@@ -2,6 +2,24 @@
 
 All notable changes to Pilot Shell will be documented in this file.
 
+## [8.6.0] - 2026-05-06
+
+### Features
+
+- Per-phase 1M context selection for /spec workflow
+- Configurable Console port, pilot update CLI, test parsimony, narrow-terminal UI
+
+### Miscellaneous
+
+- New logos, navy theme, hero polish
+- Optimize mobile hero — bigger slogan, smaller buttons, cleaner rhythm
+- Add Blog button next to Documentation in hero + README nav
+- Unify slogan to 'How real engineers run Claude Code' + bump deps
+- Launch blog with 63 migrated posts, design polish, brand CTAs
+- Add Ahrefs Web Analytics tracking script to marketing site and docs
+- SEO crawl fixes — sitemap canonicals + doc meta descriptions
+- Optimize website images and accessibility per PageSpeed audit
+
 ## [8.5.3] - 2026-05-04
 
 ### Bug Fixes
