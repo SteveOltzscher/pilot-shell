@@ -68,7 +68,7 @@ Run `pilot` for Spec-Driven Development with `/spec`, or `pilot bot` for 24/7 au
 
 **Terminal (Recommended):** [cmux](https://cmux.com) works great with Pilot Shell — its vertical tab layout lets you run multiple sessions side by side. Any modern terminal works: [Ghostty](https://ghostty.org/), [iTerm2](https://iterm2.com/), or the built-in macOS/Linux terminal.
 
-**Claude Chrome (Recommended):** Install the [Claude Code Chrome extension](https://code.claude.com/docs/en/chrome) for browser automation and E2E testing. Pilot automatically detects it and uses it as the preferred tool. When the extension isn't available, Pilot falls back to [Chrome DevTools MCP](https://github.com/anthropics/chrome-devtools-mcp) (direct CDP access, Lighthouse, performance tracing), then [playwright-cli](https://github.com/microsoft/playwright-cli) (persistent sessions, tracing) or [agent-browser](https://agent-browser.dev/) (lightweight, fast startup).
+**Claude Chrome (Recommended):** Install the [Claude Code Chrome extension](https://code.claude.com/docs/en/chrome) for browser automation and E2E testing. Pilot automatically detects it and uses it as the preferred tool. When the extension isn't available, Pilot falls back to [Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp) (direct CDP access, Lighthouse, performance tracing), then [playwright-cli](https://github.com/microsoft/playwright-cli) (persistent sessions, tracing) or [agent-browser](https://agent-browser.dev/) (lightweight, fast startup).
 
 **Codex Plugin (Included):** The [Codex plugin](https://github.com/openai/codex-plugin-cc) is installed automatically with Pilot. It provides adversarial code review powered by OpenAI Codex — an independent second opinion during `/spec` planning and verification. Run `/codex:setup` once to authenticate, then enable reviewers in Console Settings → Reviewers. A [ChatGPT Plus](https://chatgpt.com/#pricing) subscription ($20/mo) covers the Codex API usage.
 
@@ -120,7 +120,7 @@ For tighter isolation when working with untrusted code, combine the dev containe
 1. **Prerequisites** — Checks/installs Homebrew, Node.js, Python 3.12+, uv, git, jq
 2. **Claude files** — Sets up `~/.claude/` plugin — rules, commands, hooks, MCP servers
 3. **Config files** — Creates `.nvmrc` and project config
-4. **Dependencies** — Installs Probe, RTK, CodeGraph, context-mode (better-sqlite3), [Chrome DevTools MCP](https://github.com/anthropics/chrome-devtools-mcp), [playwright-cli](https://github.com/microsoft/playwright-cli), [agent-browser](https://agent-browser.dev/), language servers
+4. **Dependencies** — Installs Probe, RTK, CodeGraph, context-mode (better-sqlite3), [Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp), [playwright-cli](https://github.com/microsoft/playwright-cli), [agent-browser](https://agent-browser.dev/), language servers
 5. **Shell integration** — Auto-configures bash, fish, and zsh with `pilot` alias
 6. **VS Code extensions** — Installs recommended extensions for your stack
 7. **Finalize** — Success message with next steps
@@ -606,7 +606,7 @@ For full details on every component, see the **[Documentation](https://pilot-she
 
 | Component | What it does |
 | --- | --- |
-| [**Pilot Console**](https://pilot-shell.com/docs/features/console) | Local web dashboard at `localhost:41777` — 10 views (Dashboard, Sessions, Memories, Requirements, Specifications, Extensions, Changes, Usage, Help, Settings). SQLite-backed, nothing leaves your machine |
+| [**Pilot Console**](https://pilot-shell.com/docs/features/console) | Local web dashboard at `localhost:41777` — 10 views (Dashboard, Sessions, Memories, Requirements, Specifications, Extensions, Changes, Usage, Help, Settings). Port is configurable in Console Settings (`CLAUDE_PILOT_WORKER_PORT`). SQLite-backed, nothing leaves your machine |
 | [**Pilot Bot**](https://pilot-shell.com/docs/features/bot) | Persistent 24/7 automation agent with scheduled jobs, background tasks, heartbeat monitoring, and optional Telegram integration for bidirectional messaging |
 | [**Status Line**](https://pilot-shell.com/docs/features/statusline) | Real-time session dashboard below every response — model, context usage, git status, cost, spec progress, and savings metrics across 3 lines |
 | [**Smart Model Routing**](https://pilot-shell.com/docs/features/model-routing) | Opus for planning, Sonnet for implementation and verification. Configurable per-phase via Console Settings, with a Custom… option for pinning explicit Anthropic model IDs (e.g. `claude-opus-4-6`). 1M context available — included with API plans (Team, Enterprise); Max plan requires all models set to Opus |

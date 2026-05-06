@@ -15,7 +15,7 @@
 
    ```
    AskUserQuestion(
-     question="All automated checks passed. Please review the code changes in the Console's **Changes** tab.\n\nYou can leave inline annotations using the **Review** mode toggle — annotations save automatically.\n\n[brief summary of fix]\n\nChoose an option when done:",
+     question="All automated checks passed. Please review the code changes in the Console's **Changes** tab.\n\nYou can leave inline annotations using the **Review** mode toggle — annotations save automatically.\n\n[brief summary of fix]\n\nChoose an option below, or type your feedback directly into the input box (free text works the same as picking 'Manual'):",
      options=["Approve — mark spec as verified", "Fix — address my annotations from the Console", "Manual — I'll test manually and report back"]
    )
    ```

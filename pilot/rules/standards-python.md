@@ -23,7 +23,7 @@ uv run pytest
 
 ```bash
 uv run pytest -q                                    # Quiet mode (preferred)
-uv run pytest -q --cov=src --cov-fail-under=80     # Coverage
+uv run pytest -q --cov=src                         # Coverage report (gate is per-critical-path; see testing.md)
 # AVOID -v, -vv, -s unless actively debugging
 
 ruff format .                                       # Format
@@ -56,6 +56,6 @@ basedpyright src                                    # Type check (adapt to your 
 - [ ] `ruff format .` — formatted
 - [ ] `ruff check .` — clean
 - [ ] `basedpyright src` — clean (adapt to your source dirs)
-- [ ] Coverage ≥ 80%
+- [ ] Critical-path coverage adequate (see testing.md "Test Strategy & Coverage")
 - [ ] No unused imports
 - [ ] Production files ideally under 800 lines (1000+ = consider splitting)

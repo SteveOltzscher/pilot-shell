@@ -12,9 +12,10 @@ from _lib.dashboard_notify import send_dashboard_notification
 
 
 class TestSendDashboardNotification:
+    @patch("_lib.dashboard_notify.get_console_url", return_value="http://127.0.0.1:41777")
     @patch("_lib.dashboard_notify.urllib.request.urlopen")
     @patch("_lib.dashboard_notify.urllib.request.Request")
-    def test_sends_notification_to_console_api(self, mock_request_cls, mock_urlopen):
+    def test_sends_notification_to_console_api(self, mock_request_cls, mock_urlopen, _mock_url):
         """Should POST notification to Console API."""
         mock_response = MagicMock()
         mock_response.status = 201
@@ -25,7 +26,8 @@ class TestSendDashboardNotification:
         assert result is True
         mock_request_cls.assert_called_once()
         call_args = mock_request_cls.call_args
-        assert "http://localhost:41777/api/notifications" in call_args[0][0]
+        assert "/api/notifications" in call_args[0][0]
+        assert ":41777" in call_args[0][0]
         body = json.loads(call_args[1]["data"])
         assert body["type"] == "plan_approval"
         assert body["title"] == "Plan Review"

@@ -72,8 +72,13 @@ CODEX_COMPANION=$(ls ~/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-
 PROJECT_ROOT="${CLAUDE_PROJECT_ROOT:-$(pwd)}"
 ```
 
-2. Launch adversarial review in background using `--scope working-tree` (reviews all uncommitted changes regardless of staging state — works in both worktree and non-worktree mode). **⛔ Use `Bash(run_in_background=true)`** — the companion's `--background` flag is a no-op for reviews (only works for `task`), so we use Claude Code's background bash instead:
-```bash
-cd "$PROJECT_ROOT" && node "$CODEX_COMPANION" adversarial-review --scope working-tree "Challenge this implementation: <plan summary/goal>. Plan: <plan-path>. Focus on: wrong approach, missing edge cases, security gaps, untested paths, and design choices that could fail under load."
-```
+2. Launch adversarial review in background using `--scope working-tree` (reviews all uncommitted changes regardless of staging state — works in both worktree and non-worktree mode). **⛔ Use `Bash(run_in_background=true, timeout=600000)`** — the companion's `--background` flag is a no-op for reviews (only works for `task`), so we use Claude Code's background bash instead. **The `timeout=600000` (10 min, the Bash tool maximum) is MANDATORY** — Bash defaults to 120000 ms (2 min), which SIGKILLs the codex process mid-investigation and produces zero findings. Adversarial reviews on diffs typically take 1–6 minutes. The companion writes a persistent job record at `$CLAUDE_PLUGIN_DATA/state/<slug>-<hash>/jobs/review-<id>.json` (`status`, `rendered`, `result.parsed`) — that file, retrieved via `node $CODEX_COMPANION result <job-id> --json` in Step 7, is the authoritative findings source.
+
+   ```
+   Bash(
+     command="cd $PROJECT_ROOT && node $CODEX_COMPANION adversarial-review --scope working-tree \"Challenge this implementation: <plan summary/goal>. Plan: <plan-path>. Focus on: wrong approach, missing edge cases, security gaps, untested paths, and design choices that could fail under load.\"",
+     run_in_background=true,
+     timeout=600000
+   )
+   ```
 **Do NOT wait** — proceed to Step 5 immediately. You'll be notified when the background bash completes.

@@ -33,13 +33,15 @@ One responsibility per file. Files that change together live together. In existi
 - Modify: `exact/path/to/existing.py`
 - Test: `tests/exact/path/to/test.py`
 
+**Trivial:** [Omit, OR a one-line justification: "≤ 5 net new lines, no new branch/loop/try with non-trivial body, no new public symbol, no new error path; covered by `<existing-test-or-verify-command>`"]
+
 **Key Decisions / Notes:**
 
 - [Technical approach, pattern to follow with file:line ref]
 
 **Definition of Done:**
 
-- [ ] All tests pass
+- [ ] Relevant existing/new tests pass (`Trivial:` only skips RED/new-test creation; it does not skip verification)
 - [ ] No diagnostics errors
 - [ ] [Verifiable criterion — e.g., "API returns 404 for nonexistent resources"]
 
@@ -49,6 +51,19 @@ One responsibility per file. Files that change together live together. In existi
 ```
 
 **DoD must be verifiable.** ✅ "GET /api/users?role=admin returns only admin users" ❌ "Feature works correctly"
+
+#### Test plan parsimony
+
+**Testing posture preference.** If there is no project-level testing rule/memory and this plan would introduce several test classes or force a choice between unit-only vs unit+functional coverage, ask one concise question about testing posture. Default to the parsimonious posture here if questions are disabled or the user does not specify a preference.
+
+When listing files for a task, do not auto-create a new `tests/.../test_<file>.py` line for every modified production file. Apply these rules in order:
+
+1. If an existing test class for this production class already exists, reuse it (modify, do not duplicate).
+2. If the change is genuinely trivial (≤ 5 net new lines, no new branch/loop/try with non-trivial body, no new public symbol, no new error path), set the task's `Trivial:` field with the justification and the existing covering test/verification command — and omit the test file from `Files:`.
+3. Otherwise, plan **at most 1 new unit test class + at most 1 new functional/integration test class** for this production class. More than that requires an explicit `Why >2 test classes:` note in `Key Decisions`.
+4. Never plan a test file per method or per branch. The test class is the unit; methods inside it cover branches.
+
+The reviewer agent (`pilot/agents/changes-review.md`) and `spec-verify` Step 5 audit these rules against the actual diff — they are not advisory.
 
 **Performance considerations:** When a task processes data on a hot path (render loops, request handlers, polling callbacks), note it in Key Decisions. Flag: expensive computations that should be cached/memoized, heavy dependencies that have lighter alternatives, and repeated work that can be avoided when input hasn't changed.
 

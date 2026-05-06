@@ -87,10 +87,15 @@ BASE_BRANCH=$(~/.pilot/bin/pilot worktree status --json 2>/dev/null | grep -o '"
 [ -z "$BASE_BRANCH" ] && BASE_BRANCH=$(cd "$PROJECT_ROOT" && git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo "main")
 ```
 
-2. Launch adversarial review in background. **⛔ Use `Bash(run_in_background=true)`** — the companion's `--background` flag is a no-op for reviews (only works for `task`), so we use Claude Code's background bash instead. The review runs synchronously inside the bash, and you'll be notified when it completes:
-```bash
-cd "$PROJECT_ROOT" && node "$CODEX_COMPANION" adversarial-review --base "$BASE_BRANCH" "Challenge this plan: <plan summary/goal>. Plan file: <plan-path>. Focus on: wrong assumptions, missing edge cases, scope gaps, and design choices that could fail under real-world conditions."
-```
+2. Launch adversarial review in background. **⛔ Use `Bash(run_in_background=true, timeout=600000)`** — the companion's `--background` flag is a no-op for reviews (only works for `task`), so we use Claude Code's background bash instead. **The `timeout=600000` (10 min, the Bash tool maximum) is MANDATORY** — Bash defaults to 120000 ms (2 min), which SIGKILLs the codex process mid-investigation and produces zero findings. Adversarial reviews on plans typically take 1–6 minutes; the 10-minute ceiling is the safety margin. The companion writes a persistent job record at `$CLAUDE_PLUGIN_DATA/state/<slug>-<hash>/jobs/review-<id>.json` (`status`, `rendered`, `result.parsed`) — that file, not the bash stdout, is the authoritative findings source after completion.
+
+   ```
+   Bash(
+     command="cd $PROJECT_ROOT && node $CODEX_COMPANION adversarial-review --base $BASE_BRANCH \"Challenge this plan: <plan summary/goal>. Plan file: <plan-path>. Focus on: wrong assumptions, missing edge cases, scope gaps, and design choices that could fail under real-world conditions.\"",
+     run_in_background=true,
+     timeout=600000
+   )
+   ```
 **Do NOT wait** — proceed to collect the Claude reviewer results first.
 
 #### Collect Review Results
@@ -124,11 +129,49 @@ Then Read the file once. If not READY after 5 min, re-launch synchronously.
 
 The completion notification arrives automatically as a mid-turn tool-result-style event; you do not need to poll for it.
 
-1. **When (and ONLY when) the completion notification arrives**, read the background bash output. **Filter out `[codex]` prefixed log lines** — use `ctx_execute_file` to extract only non-`[codex]` lines. Search for `# Codex Adversarial Review` section via `ctx_search`.
+1. **When (and ONLY when) the completion notification arrives, retrieve the findings from the persistent job state — NOT from the bash stdout file.** The companion writes the rendered review to a job record that survives bash truncation, mid-flight kills, and shell-pipe weirdness. Use the companion's own `status` + `result` subcommands (the supported public interface in `lib/render.mjs:211-283` and `state.mjs:resolveJobsDir`):
 
-2. **Parse the output:** Extract `Verdict:` and `Findings:` lines. Map severities: `[high]` / `[critical]` → must_fix, `[medium]` / `[low]` → should_fix. Fix all must_fix/should_fix.
+   ```bash
+   STATUS_JSON=$(node "$CODEX_COMPANION" status --json)
+   JOB_ID=$(printf '%s' "$STATUS_JSON" | python3 -c "
+   import json,sys
+   d=json.load(sys.stdin)
+   lf=d.get('latestFinished') or {}
+   if lf.get('kind')=='adversarial-review' and lf.get('status')=='completed':
+       print(lf['id']); sys.exit(0)
+   for j in (d.get('running') or []):
+       if j.get('kind')=='adversarial-review':
+           print('STILL_RUNNING:'+j['id']); sys.exit(0)
+   sys.exit(1)
+   ")
+   ```
 
-3. **If the background bash timed out or failed** (exit code non-zero in the notification): Re-launch synchronously and wait. Only skip if the second attempt also fails.
+   - If `$JOB_ID` is empty → no adversarial-review job ran. Re-launch synchronously (foreground `Bash(timeout=600000)`).
+   - If `$JOB_ID` starts with `STILL_RUNNING:` → the bash was killed before the review completed (the most common failure mode pre-fix). Re-launch synchronously with foreground bash, `timeout=600000`. Do NOT trust any partial output.
+   - Else, fetch the rendered findings:
+
+     ```bash
+     node "$CODEX_COMPANION" result "$JOB_ID" --json > /tmp/codex-result-$$.json
+     ```
+
+   Then read `/tmp/codex-result-$$.json` via `ctx_execute_file` and extract `storedJob.rendered` (the full markdown report) and `storedJob.result.parsed` (structured `{verdict, summary, findings, next_steps}`). **Verify before parsing**: `storedJob.status === "completed"` AND `storedJob.rendered` starts with `"# Codex Adversarial Review"`. If either check fails, treat as a re-launch trigger — do NOT silently proceed.
+
+2. **Parse the rendered findings.** Format (from `lib/render.mjs:211-283`):
+   ```
+   # Codex Adversarial Review
+   Target: <branch>
+   Verdict: <approve|needs-attention|reject>
+   <summary>
+   Findings:
+   - [<severity>] <title> (<file>:<lines>)
+     <body>
+     Recommendation: <recommendation>
+   Next steps:
+   - <step>
+   ```
+   Severity → action map: `[critical]` / `[high]` → must_fix; `[medium]` / `[low]` → should_fix; `[info]` → suggestion. Fix every must_fix and should_fix inline.
+
+3. **If `latestFinished` is absent and the bash exit code was non-zero in the notification** (genuine launch failure, not a timeout): re-launch synchronously and wait. If the second attempt also fails, escalate to the user with the captured error — do not silently proceed.
 
 4. **Mark Codex as ran** so re-iterations of this plan within the same session do not re-run it:
 ```bash

@@ -159,7 +159,7 @@ def test_complete_session_spawns_detached_worker():
     argv = args[0]
     assert argv[1] == "-c"
     assert argv[2] == session_end._COMPLETE_SESSION_WORKER
-    assert argv[-2] == f"{session_end.CONSOLE_URL}/api/sessions/complete"
+    assert argv[-2] == f"{session_end.get_console_url()}/api/sessions/complete"
     assert argv[-1] == "abc-123-def"
     assert kwargs["start_new_session"] is True
     assert kwargs["close_fds"] is True

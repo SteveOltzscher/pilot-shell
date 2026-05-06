@@ -39,7 +39,7 @@ ctx_search(queries: ["auth flow", "login endpoint"])
 
 **Browser automation via Chrome DevTools Protocol**
 
-Enterprise-friendly fallback when the Claude Code Chrome extension can't be installed. Connects directly to Chrome via CDP — no extension needed. Also provides Lighthouse audits, performance tracing, and device emulation that other browser tools lack. Integrated via [chrome-devtools-mcp](https://github.com/anthropics/chrome-devtools-mcp).
+Enterprise-friendly fallback when the Claude Code Chrome extension can't be installed. Connects directly to Chrome via CDP — no extension needed. Also provides Lighthouse audits, performance tracing, and device emulation that other browser tools lack. Integrated via [chrome-devtools-mcp](https://github.com/ChromeDevTools/chrome-devtools-mcp).
 
 ```
 list_pages()

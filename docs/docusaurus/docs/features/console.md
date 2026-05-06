@@ -14,6 +14,10 @@ The Console runs locally as a Bun/Express server with a React web UI. It starts 
 $ open http://localhost:41777
 ```
 
+:::tip Custom port
+The default port `41777` is configurable. Open the **Settings** tab and edit the **Console → Worker Port** field, then click **Save Port** (or edit `CLAUDE_PILOT_WORKER_PORT` in `~/.pilot/memory/settings.json` directly). Restart Pilot for the change to take effect — the launcher, status line, hooks (session_end, pre_compact, dashboard notifications), MCP server, and installer all read the same setting and will follow it.
+:::
+
 ## Views
 
 Each view that supports project filtering has an inline **Project Filter** dropdown next to the title. The **Dashboard** shows stats across all projects with clickable tiles that navigate to the relevant view.
@@ -99,7 +103,7 @@ The Console sends real-time alerts via Server-Sent Events when Claude needs your
 
 ## Settings
 
-The Settings tab (`localhost:41777/#/settings`) controls Pilot Shell behavior. Changes save to `~/.pilot/config.json` and take effect after restarting Claude Code.
+The Settings tab (`localhost:41777/#/settings`, or your custom port) controls Pilot Shell behavior. Model preferences, spec workflow toggles, and reviewer agents save to `~/.pilot/config.json`. The **Console → Worker Port** field saves to `~/.pilot/memory/settings.json` and lets you move the Console off `41777` if it conflicts with another service. Both changes take effect after restarting Pilot.
 
 ### Model preferences
 

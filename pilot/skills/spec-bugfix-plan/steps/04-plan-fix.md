@@ -45,6 +45,10 @@ When a genuine choice exists AND `PILOT_PLAN_QUESTIONS_ENABLED` is not `"false"`
 **Task 1 — Write Reproducing Test (RED)**
 Encode `Currently → Expected` via an existing public entry point. Run → must FAIL with the documented symptom. Worktree mode: commit alone before any fix code. Naming: `test_<function>_<bug>_<expected>`.
 
+**Reuse > create.** If a test class already exists for this entry point, modify it (add one new test method that encodes the bug). Do NOT create a sister test class — that violates the parsimony rule (see `pilot/rules/testing.md` § Test Parsimony).
+
+**`Trivial:` does not apply here.** The feature TDD loop's `Trivial:` escape (see `pilot/skills/spec-implement/steps/04-tdd-loop.md`) is feature-only. Bugfixes always require a reproducing RED test regardless of diff size — that is the bugfix lane's anti-regression guarantee, and removing it would destroy the lane's value.
+
 **Task 2 — Implement Fix at Root Cause**
 Minimal change at `Root Cause: file:line`. Fix at source, not symptom. Re-run reproducing test → must PASS. Run targeted test module(s), not full suite — full suite runs at Task 3. Diff must touch the root-cause file.
 

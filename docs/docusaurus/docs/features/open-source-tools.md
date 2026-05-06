@@ -50,6 +50,7 @@ Pilot Shell installs the following open-source tools during setup. Each tool is 
 | [Probe](https://github.com/probelabs/probe) | Semantic code search engine | ISC |
 | [RTK](https://github.com/rtk-ai/rtk) | Token-optimized CLI proxy (60-90% savings) | MIT |
 | [CodeGraph](https://github.com/colbymchenry/codegraph) | Code knowledge graph and structural analysis | MIT |
+| [context-mode](https://github.com/mksglu/context-mode) | Sandbox execution + FTS5 knowledge base — keeps large outputs out of context | ELv2 |
 
 ## Plugin Runtime Dependencies
 
@@ -68,7 +69,7 @@ Pilot Shell installs the following open-source tools during setup. Each tool is 
 
 | Tool | Purpose | License |
 |------|---------|---------|
-| [Chrome DevTools MCP](https://github.com/anthropics/chrome-devtools-mcp) | Browser automation via Chrome DevTools Protocol — Lighthouse, performance tracing, device emulation | Apache-2.0 |
+| [Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp) | Browser automation via Chrome DevTools Protocol — Lighthouse, performance tracing, device emulation | Apache-2.0 |
 | [playwright-cli](https://github.com/microsoft/playwright-cli) | Browser automation — persistent sessions, tracing, network mocking | Apache-2.0 |
 | [agent-browser](https://github.com/vercel-labs/agent-browser) | Browser automation — lightweight, fast startup | Apache-2.0 |
 | [Chrome for Testing](https://developer.chrome.com/blog/chrome-for-testing/) | Headless browser engine (via playwright-cli / agent-browser) | BSD-3-Clause |
@@ -81,7 +82,6 @@ Pilot Shell installs the following open-source tools during setup. Each tool is 
 
 | Tool | Purpose | License |
 |------|---------|---------|
-| [context-mode](https://github.com/mksglu/context-mode) | Sandbox execution + FTS5 knowledge base — keeps large outputs out of context | ELv2 |
 | [Context7](https://github.com/upstash/context7) | Library documentation lookup | MIT |
 | [open-websearch](https://github.com/Aas-ee/open-webSearch) | Web search (multi-engine, no API key) | MIT |
 | [fetcher-mcp](https://github.com/jae-jae/fetcher-mcp) | Web page fetching via Playwright | MIT |

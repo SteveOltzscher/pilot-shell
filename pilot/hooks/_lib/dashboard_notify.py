@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import urllib.request
 
-CONSOLE_URL = "http://localhost:41777"
+from _lib.console_settings import get_console_url
 
 
 def send_dashboard_notification(
@@ -18,7 +18,7 @@ def send_dashboard_notification(
     plan_path: str | None = None,
 ) -> bool:
     """POST a notification to the Console API. Returns True on success."""
-    url = f"{CONSOLE_URL}/api/notifications"
+    url = f"{get_console_url()}/api/notifications"
     payload: dict[str, str] = {"type": type, "title": title, "message": message}
     if plan_path:
         payload["planPath"] = plan_path

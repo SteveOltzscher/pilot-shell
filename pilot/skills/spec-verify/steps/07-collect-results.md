@@ -35,11 +35,49 @@ For each fix: implement → run relevant tests → log "Fixed: [title]"
 
 **⛔ If the notification hasn't arrived yet:** STOP. Do NOT proceed to Phase B, do NOT say "still running, moving on", do NOT read the output file, do NOT conclude the review failed. Wait for the `<task-notification>` with `<status>completed</status>`. If you are tempted to check the file — that is the exact mistake this rule prevents.
 
-1. **When (and ONLY when) the completion notification arrives**, read the background bash output. The companion prints the full review to stdout. **Filter out `[codex]` prefixed log lines** — the actual review content is the non-prefixed lines. Use `ctx_execute_file` to extract only non-`[codex]` lines. Search for `# Codex Adversarial Review` section via `ctx_search`.
+1. **When (and ONLY when) the completion notification arrives, retrieve the findings from the persistent job state — NOT from the bash stdout file.** The companion writes the rendered review to a job record that survives bash truncation, mid-flight kills, and shell-pipe weirdness. Use the companion's own `status` + `result` subcommands (the supported public interface in `lib/render.mjs:211-283` and `state.mjs:resolveJobsDir`):
 
-2. **Parse the output:** Extract `Verdict:` and `Findings:` lines. Map severities: `[high]` / `[critical]` → must_fix, `[medium]` / `[low]` → should_fix. Fix all must_fix/should_fix.
+   ```bash
+   STATUS_JSON=$(node "$CODEX_COMPANION" status --json)
+   JOB_ID=$(printf '%s' "$STATUS_JSON" | python3 -c "
+   import json,sys
+   d=json.load(sys.stdin)
+   lf=d.get('latestFinished') or {}
+   if lf.get('kind')=='adversarial-review' and lf.get('status')=='completed':
+       print(lf['id']); sys.exit(0)
+   for j in (d.get('running') or []):
+       if j.get('kind')=='adversarial-review':
+           print('STILL_RUNNING:'+j['id']); sys.exit(0)
+   sys.exit(1)
+   ")
+   ```
 
-3. **If the background bash timed out or failed** (exit code non-zero in the notification): Re-launch synchronously (not in background) and wait for results. Only skip if the second attempt also fails.
+   - If `$JOB_ID` is empty → no adversarial-review job ran. Re-launch synchronously (foreground `Bash(timeout=600000)`).
+   - If `$JOB_ID` starts with `STILL_RUNNING:` → the bash was killed before the review completed (the most common failure mode pre-fix). Re-launch synchronously with foreground bash, `timeout=600000`. Do NOT trust any partial output.
+   - Else, fetch the rendered findings:
+
+     ```bash
+     node "$CODEX_COMPANION" result "$JOB_ID" --json > /tmp/codex-result-$$.json
+     ```
+
+   Then read `/tmp/codex-result-$$.json` via `ctx_execute_file` and extract `storedJob.rendered` (the full markdown report) and `storedJob.result.parsed` (structured `{verdict, summary, findings, next_steps}`). **Verify before parsing**: `storedJob.status === "completed"` AND `storedJob.rendered` starts with `"# Codex Adversarial Review"`. If either check fails, treat as a re-launch trigger — do NOT silently proceed.
+
+2. **Parse the rendered findings.** Format (from `lib/render.mjs:211-283`):
+   ```
+   # Codex Adversarial Review
+   Target: <branch or working-tree>
+   Verdict: <approve|needs-attention|reject>
+   <summary>
+   Findings:
+   - [<severity>] <title> (<file>:<lines>)
+     <body>
+     Recommendation: <recommendation>
+   Next steps:
+   - <step>
+   ```
+   Severity → action map: `[critical]` / `[high]` → must_fix; `[medium]` / `[low]` → should_fix; `[info]` → suggestion. Fix every must_fix and should_fix inline.
+
+3. **If `latestFinished` is absent and the bash exit code was non-zero in the notification** (genuine launch failure, not a timeout): re-launch synchronously (not in background) and wait for results. If the second attempt also fails, escalate to the user with the captured error — do not silently proceed.
 
 4. **Mark Codex as ran** so re-verify iterations within the same session do not re-run it:
 ```bash

@@ -14,11 +14,12 @@ Run `pilot` or `ccp` with no arguments to start Claude with Pilot enhancements. 
 
 | Command | Description |
 |---------|-------------|
-| `pilot` | Start Claude with Pilot enhancements, auto-update, and license check |
+| `pilot` | Start Claude with Pilot enhancements, license check, and a one-line update banner when a newer release exists |
 | `pilot [claude-flags...]` | Start Claude with any Claude CLI flags passed through |
 | `pilot -p "prompt" [flags...]` | Headless mode — non-interactive for CI/CD, scripts |
 | `pilot run [flags...]` | Explicit alias for starting Claude |
 | `ccp` | Alias for `pilot` |
+| `pilot update [--yes] [--json]` | Download and install the latest Pilot Shell release (replaces the startup banner) |
 | `pilot check-context --json` | Get current context usage percentage |
 | `pilot register-plan <path> <status>` | Associate a plan file with the current session |
 | `pilot sessions [--json]` | Show count of active Pilot sessions |
@@ -26,6 +27,10 @@ Run `pilot` or `ccp` with no arguments to start Claude with Pilot enhancements. 
 | `pilot notify <type> <title> <message> [--plan-path PATH] [--json]` | Send a notification to the Console dashboard (type: `info`, `plan_approval`, `attention_needed`, `verification_complete`) |
 | `pilot skill-build <skill-dir> [--output <path>] [--dry-run] [--json]` | Build `SKILL.md` and `hashes.json` from a skill's manifest + fragments |
 | `pilot --version` | Show Pilot Shell version |
+
+:::info Update flow
+When a newer release exists, `pilot` prints a one-line banner on launch and continues straight into Claude — startup never blocks on the install. Run `pilot update` (add `--yes` to skip confirmation) when you're ready. The check is cached for 6 hours, so warm launches don't pay a network round-trip.
+:::
 
 ## Bot mode
 

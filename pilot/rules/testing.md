@@ -1,8 +1,18 @@
 ## Testing
 
-### TDD — Mandatory
+### Default Posture: Parsimonious
 
-**⛔ STOP: Do you have a failing test? If not, write one FIRST.**
+**Default: reuse existing behavioural tests first; when a new public production class truly needs new tests, the ceiling is 1 unit test class + 1 functional test class (only when behaviour cannot be exercised through unit tests).** Multiply test classes only when the production class has genuinely independent behavioural axes that warrant separation. Avoid one-test-class-per-method, redundant assertions on the same path, and tests written purely to push a coverage number above a threshold.
+
+The structure of tests should be **contra-variant** with the structure of code (Uncle Bob, *Test Contravariance*) — the one-unit-plus-one-functional ceiling is not a mandate to mirror every production class, and coupling test layout to code layout is what produces fragile, refactor-resistant suites. Kent Beck's *Test Desiderata* names the property explicitly: tests should be **structure-insensitive** — their pass/fail signal must respond to behaviour change, not to where you happened to put a method today.
+
+**Local override.** A project that wants strict-TDD or blanket-coverage behaviour creates `.claude/rules/testing-project.md` in the repository — that file shadows this global rule. See the [Rules & Standards § Override the testing posture](https://pilot-shell.com/docs/features/rules#override-the-testing-posture) docs for a sample shadow rule and the full anti-patterns table.
+
+> **Why this rule exists.** User feedback (paraphrased): *"90% of the time, the agent tries to test too much, doing redundant tests that just add to the maintenance cost of the codebase. It also tends to create one test class for each tiny part of the logic of a given class instead of 1 class = 1 unit test + 1 functional test (if needed)."* This default codifies that complaint as the rule.
+
+### TDD — Default with Documented Escapes
+
+**⛔ Default: have a failing test before you write production code.**
 
 #### Red-Green-Refactor
 
@@ -12,15 +22,20 @@
 4. **VERIFY GREEN** — Full suite passes. Check diagnostics.
 5. **REFACTOR** — Improve quality; tests stay green; no new behavior.
 
-**TDD applies to:** new functions, API endpoints, business logic, bug fixes (reproduce first), behavior changes. **Skip:** docs, config, dep versions, formatting-only.
+**TDD applies to:** new functions, API endpoints, business logic, bug fixes (reproduce first), behavior changes.
 
-**Recovery (code before test):** don't revert — write the test now, verify it catches regressions. Goal is coverage, not ritual.
+**Skip RED when:**
+- Docs, config, dep version bumps, formatting-only changes.
+- The plan task carries a `Trivial:` justification naming the existing covering test or verification command (≤ 5 net new lines of production code, no new branch/loop/try with a non-trivial body, no new public symbol, no new error path). The reviewer agent (`pilot/agents/changes-review.md`) and the verify step (`pilot/skills/spec-verify/steps/05-automated-checks.md` § 5.1) audit the claim against the actual diff — the planner's claim is NOT authoritative.
+- **Bugfixes never qualify for the `Trivial:` escape.** A bugfix without a reproducing test is a rubber-stamp fix; the reproducing test is the regression-prevention guarantee.
+
+**Recovery (code before test):** don't revert — write the test now, verify it catches regressions. Goal is coverage of behaviour that matters, not ritual.
 
 ---
 
 ### Test Strategy & Coverage
 
-**Unit for logic, integration for interactions, E2E for workflows. Minimum 80% coverage.**
+**Unit for logic, integration for interactions, E2E for workflows.**
 
 | Type | When | Requirements |
 |------|------|--------------|
@@ -29,6 +44,8 @@
 | **E2E** | Complete user workflows, API chains | Test entire flow |
 
 External deps? No → unit. Yes → integration. Complete user workflow? Yes → E2E.
+
+**Coverage rule:** Coverage is a diagnostic, not a quota. Critical paths (business logic, security, data integrity, error handling) must have explicit behaviour coverage and no obvious coverage regressions. For glue code, configuration plumbing, simple CRUD, and trivial UI bindings, no numeric coverage gate — the parsimony audit (verify Step 5) and the reviewer agent replace the gate. Padding tests purely to push a coverage number above a threshold is a parsimony anti-pattern.
 
 ### Property-Based Testing (PBT)
 
@@ -45,10 +62,10 @@ Use when behavior depends on data shape, ranges, or combinations — not single 
 ### Running Tests
 
 ```bash
-uv run pytest -q                              # Python (quiet)
-uv run pytest --cov=src --cov-fail-under=80  # Coverage
-bun test                                      # Bun
-npm test -- --silent                          # Jest/Vitest
+uv run pytest -q                   # Python (quiet)
+uv run pytest --cov=src            # Coverage report (gate is per-critical-path; see "Test Strategy & Coverage" above)
+bun test                           # Bun
+npm test -- --silent               # Jest/Vitest
 ```
 
 ### Mandatory Mocking in Unit Tests
@@ -83,17 +100,27 @@ When a function gains a new dependency (subprocess, helper, I/O), update ALL exi
 - **Test-only methods in production** — never add methods/properties/flags purely for test access. Refactor so behavior is observable through public interfaces.
 - **Mocking without understanding** — a mock that doesn't reflect real behavior is a lie. Tests pass against the lie, fail against reality.
 
+### Test Parsimony — what NOT to do
+
+- **One test class per method** — splitting a class's tests into per-method test classes (e.g. `DoSomethingTests`, `DoNothingTests` for class `Foo`). Anti-pattern. One test class per production class is the ceiling, not the floor.
+- **Mirroring code structure in tests** — refactor moves a method, every test class follows. Tests should be contra-variant with code structure (Uncle Bob, *Test Contravariance*); a behaviour-preserving refactor must not break the suite.
+- **Redundant assertions on the same path** — three tests asserting the same observable behaviour through three internal paths is one test, not three. The non-redundant ones are the ones that fail when behaviour changes; the rest are maintenance tax.
+- **Test-per-trivial-helper** — a one-line getter or formatter does not need its own test class. If it has no branches, no I/O, and no public-API exposure, the test for the function that uses it is enough.
+- **Coverage padding** — adding tests purely to push a coverage number above a threshold. Numbers are a side-effect of testing what matters, not the goal.
+
 ### ⛔ Zero Tolerance for Failing Tests
 
 Every test failure MUST be fixed before work is done. Run the FULL suite, not just files you touched. "Pre-existing failure" is not an excuse — if you see it, you fix it.
 
 ### Completion Checklist
 
-- [ ] All new functions have tests
+- [ ] Each new public class has at most 1 unit test class + at most 1 functional test class
+- [ ] Tests assert observable behaviour, not internal structure
+- [ ] No redundant tests on the same observable path
+- [ ] Critical-path coverage adequate (no blanket %; reviewer judges)
 - [ ] Tests follow naming convention
 - [ ] Unit tests mock external dependencies
 - [ ] Full test suite passes (0 failures) — not just your files
-- [ ] Coverage ≥ 80% verified
 - [ ] Actual program executed and verified
 
 ### Assertion-Correctness Warning

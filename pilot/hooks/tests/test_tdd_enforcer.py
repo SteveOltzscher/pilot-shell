@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 import tempfile
 from pathlib import Path
@@ -12,9 +13,12 @@ from _checkers.tdd import (
     _search_test_dirs,
     has_go_test_file,
     has_python_test_file,
+    has_test_importing_module,
+    has_test_importing_module_ts,
     has_typescript_test_file,
     is_test_file,
     is_trivial_edit,
+    run_tdd_enforcer,
     should_skip,
     warn,
 )
@@ -449,3 +453,121 @@ class TestWarn:
         assert "No test file" in data["reason"]
         assert "Create test_foo.py first." in data["reason"]
         assert captured.err == ""
+
+
+class TestHasTestImportingModule:
+    def test_detects_from_import_flat_layout(self, tmp_path: Path):
+        impl = tmp_path / "src" / "auth.py"
+        impl.parent.mkdir(parents=True)
+        impl.write_text("def authenticate(): pass\n")
+        tests = tmp_path / "tests"
+        tests.mkdir()
+        (tests / "test_login_flow.py").write_text("from src.auth import authenticate\n")
+        assert has_test_importing_module(str(impl)) is True
+
+    def test_detects_from_import_sibling_of_parent_layout(self, tmp_path: Path):
+        impl = tmp_path / "hooks" / "_checkers" / "auth.py"
+        impl.parent.mkdir(parents=True)
+        impl.write_text("def authenticate(): pass\n")
+        tests = tmp_path / "hooks" / "tests"
+        tests.mkdir(parents=True)
+        (tests / "test_auth_hook.py").write_text(
+            "from _checkers.auth import authenticate\n"
+        )
+        assert has_test_importing_module(str(impl)) is True
+
+    def test_detects_plain_import(self, tmp_path: Path):
+        impl = tmp_path / "src" / "auth.py"
+        impl.parent.mkdir(parents=True)
+        impl.write_text("def authenticate(): pass\n")
+        tests = tmp_path / "tests"
+        tests.mkdir()
+        (tests / "test_login_flow.py").write_text("import src.auth\n")
+        assert has_test_importing_module(str(impl)) is True
+
+    def test_detects_from_package_import_module(self, tmp_path: Path):
+        impl = tmp_path / "src" / "auth.py"
+        impl.parent.mkdir(parents=True)
+        impl.write_text("def authenticate(): pass\n")
+        tests = tmp_path / "tests"
+        tests.mkdir()
+        (tests / "test_login_flow.py").write_text("from src import auth\n")
+        assert has_test_importing_module(str(impl)) is True
+
+    def test_detects_from_package_import_module_with_alias(self, tmp_path: Path):
+        impl = tmp_path / "src" / "auth.py"
+        impl.parent.mkdir(parents=True)
+        impl.write_text("def authenticate(): pass\n")
+        tests = tmp_path / "tests"
+        tests.mkdir()
+        (tests / "test_login_flow.py").write_text("from src import auth as auth_module\n")
+        assert has_test_importing_module(str(impl)) is True
+
+    def test_returns_false_when_no_test_imports(self, tmp_path: Path):
+        impl = tmp_path / "src" / "auth.py"
+        impl.parent.mkdir(parents=True)
+        impl.write_text("def authenticate(): pass\n")
+        tests = tmp_path / "tests"
+        tests.mkdir()
+        (tests / "test_unrelated.py").write_text("from src.other import foo\n")
+        assert has_test_importing_module(str(impl)) is False
+
+    def test_skips_when_module_is_dunder_init(self, tmp_path: Path):
+        impl = tmp_path / "src" / "__init__.py"
+        impl.parent.mkdir(parents=True)
+        impl.write_text("")
+        assert has_test_importing_module(str(impl)) is False
+
+
+class TestHasTestImportingModuleTs:
+    def test_detects_import_in_ts_test(self, tmp_path: Path):
+        impl = tmp_path / "src" / "auth.ts"
+        impl.parent.mkdir(parents=True)
+        impl.write_text("export function authenticate() {}\n")
+        tests = tmp_path / "tests"
+        tests.mkdir()
+        (tests / "login-flow.test.ts").write_text(
+            'import { authenticate } from "../src/auth";\n'
+        )
+        assert has_test_importing_module_ts(str(impl)) is True
+
+    def test_returns_false_when_no_test_imports(self, tmp_path: Path):
+        impl = tmp_path / "src" / "auth.ts"
+        impl.parent.mkdir(parents=True)
+        impl.write_text("export function authenticate() {}\n")
+        tests = tmp_path / "tests"
+        tests.mkdir()
+        (tests / "unrelated.test.ts").write_text(
+            'import { other } from "../src/other";\n'
+        )
+        assert has_test_importing_module_ts(str(impl)) is False
+
+    def test_skips_non_typescript_files(self, tmp_path: Path):
+        impl = tmp_path / "src" / "auth.py"
+        impl.parent.mkdir(parents=True)
+        impl.write_text("def authenticate(): pass\n")
+        assert has_test_importing_module_ts(str(impl)) is False
+
+
+class TestSoftenedWarnText:
+    def test_python_warning_references_parsimony_not_create_test_file(
+        self, capsys, tmp_path: Path, monkeypatch
+    ):
+        impl = tmp_path / "src" / "lonely.py"
+        impl.parent.mkdir(parents=True)
+        impl.write_text("def foo(): pass\n")
+        # No sibling test, no importing test, no failing-test cache.
+        hook_input = {
+            "tool_name": "Edit",
+            "tool_input": {
+                "file_path": str(impl),
+                "old_string": "def foo(): pass",
+                "new_string": "def foo(): return 1",
+            },
+        }
+        monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(hook_input)))
+        assert run_tdd_enforcer() == 0
+        captured = capsys.readouterr()
+        data = json.loads(captured.out)
+        assert "Consider creating test_" not in data["reason"]
+        assert "Test Parsimony" in data["reason"]

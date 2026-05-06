@@ -14,6 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+from _lib.console_settings import get_console_url
 from _lib.util import (
     get_session_plan_path,
     read_hook_stdin,
@@ -102,7 +103,7 @@ def _save_to_worker_api(state: dict, session_id: str) -> bool:
 
         data = json.dumps(payload).encode()
         req = urllib.request.Request(
-            "http://localhost:41777/api/memory/save",
+            f"{get_console_url()}/api/memory/save",
             data=data,
             headers={"Content-Type": "application/json"},
             method="POST",

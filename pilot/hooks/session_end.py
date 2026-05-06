@@ -18,9 +18,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+from _lib.console_settings import get_console_url
+
 SESSIONS_DIR = Path.home() / ".pilot" / "sessions"
 SKIP_NAMES = {"default", "pipes"}
-CONSOLE_URL = "http://localhost:41777"
 
 # Inlined script run by the detached Console POST worker. Kept minimal so the
 # subprocess startup cost is the only overhead when Console is down.
@@ -58,7 +59,7 @@ def _complete_session() -> None:
                 sys.executable,
                 "-c",
                 _COMPLETE_SESSION_WORKER,
-                f"{CONSOLE_URL}/api/sessions/complete",
+                f"{get_console_url()}/api/sessions/complete",
                 session_id,
             ],
             stdin=subprocess.DEVNULL,
@@ -113,7 +114,7 @@ def main() -> int:
         return 0
 
     # Spawn the detached worker-stop BEFORE any network I/O so the critical
-    # side effect (releasing port 41777, closing SQLite WAL handles) survives
+    # side effect (releasing the worker port, closing SQLite WAL handles) survives
     # even if the harness cancels this hook mid-flight.
     if not _has_other_active_sessions():
         stop_script = Path(plugin_root) / "scripts" / "worker-service.cjs"

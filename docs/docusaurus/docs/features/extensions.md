@@ -94,7 +94,7 @@ Some teams organize their extensions repository with subfolder paths (e.g., `plu
 
 ## Console Extensions Page
 
-The [Pilot Console](/docs/features/console) provides a full management interface at `http://localhost:41777/#/extensions`.
+The [Pilot Console](/docs/features/console) provides a full management interface at `http://localhost:41777/#/extensions` (substitute your custom port if you've changed it via Console Settings → **Worker Port**).
 
 ### Viewing Extensions
 

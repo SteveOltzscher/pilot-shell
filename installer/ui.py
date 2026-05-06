@@ -118,7 +118,8 @@ class Console:
         if self._quiet:
             return
 
-        logo = """
+        if self._console.width >= 90:
+            logo = """
 [bold blue]  ██████╗ ██╗██╗      ██████╗ ████████╗    ███████╗██╗  ██╗███████╗██╗     ██╗     [/bold blue]
 [bold blue]  ██╔══██╗██║██║     ██╔═══██╗╚══██╔══╝    ██╔════╝██║  ██║██╔════╝██║     ██║     [/bold blue]
 [bold blue]  ██████╔╝██║██║     ██║   ██║   ██║       ███████╗███████║█████╗  ██║     ██║     [/bold blue]
@@ -126,7 +127,11 @@ class Console:
 [bold blue]  ██║     ██║███████╗╚██████╔╝   ██║       ███████║██║  ██║███████╗███████╗███████╗[/bold blue]
 [bold blue]  ╚═╝     ╚═╝╚══════╝ ╚═════╝    ╚═╝       ╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝[/bold blue]
 """
-        self._console.print(logo)
+            self._console.print(logo)
+        else:
+            self._console.print()
+            self._console.print("  [bold blue]✦ PILOT SHELL[/bold blue]")
+            self._console.print()
 
         tagline = Text()
         tagline.append("  ✈ ", style="cyan")
@@ -240,7 +245,7 @@ class Console:
         with Progress(
             SpinnerColumn("dots"),
             TextColumn("[bold blue]{task.description}"),
-            BarColumn(bar_width=40, style="cyan", complete_style="green"),
+            BarColumn(bar_width=None, style="cyan", complete_style="green"),
             TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
             TextColumn("•"),
             TimeElapsedColumn(),

@@ -8,6 +8,8 @@ Use an **existing public entry point** the bug is reachable through (function, e
 
 If no clean entry point exists: that's a design smell. Document it briefly and use the closest stable one. Don't refactor "to make it testable" in the quick lane — bail out (tell the user to re-invoke with `/spec`) if the smell is large.
 
+**Modify, don't duplicate.** If a test class already covers this entry point (e.g. you can `grep` for the function name in `tests/` and find one), add the new failing test as a method INSIDE that class. Do NOT create a new test class just because the bug is "different". Prefer one class per production class/public entry point, not one class per symptom.
+
 ### 2.2 Encode `Currently → Expected`
 
 The test asserts the **correct** behaviour. Against the buggy code, the assertion must fail with an error matching the symptom you stated in Step 1.4.

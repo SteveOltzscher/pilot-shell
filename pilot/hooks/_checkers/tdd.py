@@ -212,6 +212,85 @@ def has_typescript_test_file(impl_path: str) -> bool:
     return False
 
 
+def has_test_importing_module(impl_path: str) -> bool:
+    """Return True if any test file under nearby test dirs imports the module's name.
+
+    Broader than has_*_test_file: catches functional/integration tests that already
+    import the module without sitting next to it under a sibling-named file. Honours
+    the parsimony rule (pilot/rules/testing.md § Test Parsimony) — an existing
+    behavioural test surface counts; we don't insist on test_<module>.py.
+    """
+    path = Path(impl_path)
+    module_name = path.stem
+    if not module_name or module_name == "__init__":
+        return False
+
+    test_dirs = _find_test_dirs(path.parent)
+    if not test_dirs:
+        return False
+
+    py_from = re.compile(rf"^\s*from\s+\S*\b{re.escape(module_name)}\b\s+import\b", re.MULTILINE)
+    py_from_package_import = re.compile(
+        rf"^\s*from\s+\S+\s+import\s+(?:\([^)]*\b{re.escape(module_name)}\b|[^\n#]*\b{re.escape(module_name)}\b)",
+        re.MULTILINE,
+    )
+    py_import = re.compile(rf"^\s*import\s+\S*\b{re.escape(module_name)}\b", re.MULTILINE)
+
+    for test_dir in test_dirs:
+        for pattern_glob in ("**/test_*.py", "**/*_test.py"):
+            for test_file in test_dir.glob(pattern_glob):
+                try:
+                    src = test_file.read_text(encoding="utf-8", errors="ignore")
+                except OSError:
+                    continue
+                if (
+                    py_from.search(src)
+                    or py_from_package_import.search(src)
+                    or py_import.search(src)
+                ):
+                    return True
+    return False
+
+
+def has_test_importing_module_ts(impl_path: str) -> bool:
+    """TypeScript variant of has_test_importing_module.
+
+    Looks for `from "..*<base_name>..*"` or `import "..*<base_name>..*"` patterns
+    in any .test.ts(x) / .spec.ts(x) file under nearby test dirs.
+    """
+    path = Path(impl_path)
+    if path.name.endswith(".tsx"):
+        base_name = path.name[:-4]
+    elif path.name.endswith(".ts"):
+        base_name = path.name[:-3]
+    else:
+        return False
+    if not base_name:
+        return False
+
+    test_dirs = _find_test_dirs(path.parent)
+    if not test_dirs:
+        return False
+
+    kebab = _pascal_to_kebab(base_name)
+    names = [base_name] if kebab == base_name else [base_name, kebab]
+    patterns = [
+        re.compile(rf"""(?:from|import)\s+['"][^'"]*\b{re.escape(n)}\b[^'"]*['"]""")
+        for n in names
+    ]
+
+    for test_dir in test_dirs:
+        for ext_glob in ("**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"):
+            for test_file in test_dir.glob(ext_glob):
+                try:
+                    src = test_file.read_text(encoding="utf-8", errors="ignore")
+                except OSError:
+                    continue
+                if any(p.search(src) for p in patterns):
+                    return True
+    return False
+
+
 def has_go_test_file(impl_path: str) -> bool:
     """Check if corresponding Go test file exists (sibling or in test dirs)."""
     path = Path(impl_path)
@@ -327,30 +406,40 @@ def run_tdd_enforcer() -> int:
         if has_python_test_file(file_path):
             return 0
 
+        if has_test_importing_module(file_path):
+            return 0
+
         module_name = Path(file_path).stem
         return warn(
-            f"No test file found for '{module_name}' module",
-            f"Consider creating test_{module_name}.py first.",
+            f"No test covers '{module_name}' module behaviour",
+            "Consider whether existing tests cover this behaviour. "
+            "If not, add a test for the new behaviour — not necessarily a new file. "
+            "See pilot/rules/testing.md § Test Parsimony.",
         )
 
     if file_path.endswith((".ts", ".tsx")):
         if has_typescript_test_file(file_path):
             return 0
 
-        base_name = Path(file_path).stem
+        if has_test_importing_module_ts(file_path):
+            return 0
+
         return warn(
-            "No test file found for this module",
-            f"Consider creating {base_name}.test.ts first.",
+            "No test covers this module's behaviour",
+            "Consider whether existing tests cover this behaviour. "
+            "If not, add a test for the new behaviour — not necessarily a new file. "
+            "See pilot/rules/testing.md § Test Parsimony.",
         )
 
     if file_path.endswith(".go"):
         if has_go_test_file(file_path):
             return 0
 
-        base_name = Path(file_path).stem
         return warn(
-            "No test file found",
-            f"Consider creating {base_name}_test.go first.",
+            "No test covers this module's behaviour",
+            "Consider whether existing tests cover this behaviour. "
+            "If not, add a test for the new behaviour — not necessarily a new file. "
+            "See pilot/rules/testing.md § Test Parsimony.",
         )
 
     return 0

@@ -22,6 +22,7 @@ If you find yourself queuing 3+ RED tests before any GREEN, stop and complete th
    - **GREEN:** Implement minimal code to pass
    - **REFACTOR:** Improve while keeping tests green
    - Skip TDD for: docs, config, IaC, formatting-only changes (**features only** — the Bugfix Lane below removes this escape hatch)
+   - **`Trivial:` escape.** If the task's `Trivial:` field is populated, skip RED. Apply the change, then run the existing covering test or verification command referenced in the justification (it must pass after the change — that is the GREEN signal), then continue to step 5. If the referenced check does NOT pass, the change is not trivial — remove the `Trivial:` field, return to RED. The reviewer agent and `spec-verify` Step 5.1 audit the claim against the actual diff post-implementation; padding `Trivial:` to skip TDD is a `must_fix` finding.
    - **Surprise discovery:** If something contradicts how you expected it to work, check plan's `## Assumptions` section — identify which task numbers are affected and note the invalidated assumption in the plan before continuing.
 5. **Verify tests pass** — run test suite
 6. **Run actual program** — use plan's Runtime Environment. Check port: `lsof -i :<port>`. For browser verification: prefer Claude Code Chrome if available, then Chrome DevTools MCP, then playwright-cli, then agent-browser (see `browser-automation.md` for 4-tier selection)
@@ -32,6 +33,12 @@ If you find yourself queuing 3+ RED tests before any GREEN, stop and complete th
 11. **Per-task commit (worktree only):** `git add <files> && git commit -m "{type}(spec): {task-name}"`
 12. **Mark completed:** `TaskUpdate(taskId, status="completed")`
 13. **Update plan file immediately** (Step 5)
+
+---
+
+### Test parsimony reminder
+
+Before writing a test, re-read `pilot/rules/testing.md` § "Test Parsimony — what NOT to do". Common mistake: a refactor that moves a method between classes produces a "natural" pull to add a test class for the new location. Don't. Tests are contra-variant with code structure (Uncle Bob, *Test Contravariance*). Move existing tests; do not duplicate them. The bugfix lane below preserves its single-RED-test rule and the `Trivial:` escape does NOT apply to bugfixes.
 
 ---
 

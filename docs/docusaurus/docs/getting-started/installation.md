@@ -34,7 +34,7 @@ Run from any directory — it installs globally to `~/.pilot/` and `~/.claude/`.
 
 For the best browser automation and E2E testing experience, install the [Claude Code Chrome extension](https://code.claude.com/docs/en/chrome). It provides richer visual context and direct access to your existing browser sessions.
 
-Pilot uses a 4-tier browser tool selection: **Chrome extension** (preferred) → **[Chrome DevTools MCP](https://github.com/anthropics/chrome-devtools-mcp)** (enterprise fallback via CDP — Lighthouse, performance tracing, device emulation) → **playwright-cli** (thorough E2E with persistent sessions, tracing, network mocking) → **agent-browser** (lightweight, fast startup). All four are installed automatically. In environments where the Chrome extension can't be installed (enterprise restrictions, dev containers), Pilot falls back to Chrome DevTools MCP first, then to CLI tools.
+Pilot uses a 4-tier browser tool selection: **Chrome extension** (preferred) → **[Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp)** (enterprise fallback via CDP — Lighthouse, performance tracing, device emulation) → **playwright-cli** (thorough E2E with persistent sessions, tracing, network mocking) → **agent-browser** (lightweight, fast startup). The three CLI/MCP tools are installed automatically. The Chrome extension must be installed manually via the browser extension store. In environments where the Chrome extension can't be installed (enterprise restrictions, dev containers), Pilot falls back to Chrome DevTools MCP first, then to CLI tools.
 
 ## Codex Plugin (Included)
 

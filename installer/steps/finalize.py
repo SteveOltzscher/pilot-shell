@@ -8,6 +8,7 @@ import time
 from pathlib import Path
 
 from installer import __version__
+from installer.console_settings import get_console_display, get_worker_port
 from installer.context import InstallContext
 from installer.steps.base import BaseStep
 
@@ -51,7 +52,7 @@ class FinalizeStep(BaseStep):
         """Kill any running Console worker so it restarts with the newly installed files."""
         try:
             result = subprocess.run(
-                ["lsof", "-ti", ":41777"],
+                ["lsof", "-ti", f":{get_worker_port()}"],
                 capture_output=True,
                 text=True,
                 timeout=5,
@@ -103,7 +104,7 @@ class FinalizeStep(BaseStep):
         getting_started.extend(
             [
                 ("Launch Pilot Shell", "Run 'pilot' in your project folder instead of 'claude'"),
-                ("Pilot Shell Console", "Open the UI in your browser at: http://localhost:41777"),
+                ("Pilot Shell Console", f"Open the UI in your browser at: http://{get_console_display()}"),
                 ("Pilot Bot", "Run 'pilot bot' for 24/7 automation with scheduled tasks"),
                 ("Claude Chrome", "Install and enable for better browser automation"),
             ]
