@@ -2,6 +2,13 @@
 
 All notable changes to Pilot Shell will be documented in this file.
 
+## [8.6.2] - 2026-05-06
+
+### Bug Fixes
+
+- Always check for updates on launch and tighten install hint
+- Re-check for updates after 30 minutes when no update is cached
+
 ## [8.6.1] - 2026-05-06
 
 ### Bug Fixes
