@@ -2,6 +2,16 @@
 
 All notable changes to Pilot Shell will be documented in this file.
 
+## [8.8.0] - 2026-05-12
+
+### Bug Fixes
+
+- Drop pilot/plugin.json from semantic-release prepareCmd
+
+### Features
+
+- Agents dashboard support + Semble code search + LSP marketplace 
+
 ## [8.7.1] - 2026-05-08
 
 ### Bug Fixes
