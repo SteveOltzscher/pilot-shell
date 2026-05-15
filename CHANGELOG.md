@@ -2,6 +2,12 @@
 
 All notable changes to Pilot Shell will be documented in this file.
 
+## [8.10.0] - 2026-05-15
+
+### Features
+
+- Multi-user spec feedback polling with persistent share links
+
 ## [8.9.0] - 2026-05-13
 
 ### Bug Fixes
