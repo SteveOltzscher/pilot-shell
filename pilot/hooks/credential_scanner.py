@@ -207,7 +207,14 @@ def _regex_timeout(seconds: int = REGEX_TIMEOUT_SECONDS) -> Iterator[None]:
     def _on_alarm(_signum: int, _frame: object) -> None:
         raise TimeoutError("regex scan timeout")
 
-    prev_handler = signal.signal(signal.SIGALRM, _on_alarm)
+    # `signal.signal` raises ValueError off the main thread (issue #148).
+    # The 24 scanner rules are bounded; losing the alarm guard is preferable
+    # to crashing the hook with no diagnostic.
+    try:
+        prev_handler = signal.signal(signal.SIGALRM, _on_alarm)
+    except ValueError:
+        yield
+        return
     signal.alarm(seconds)
     try:
         yield
@@ -909,5 +916,18 @@ def run_credential_scanner() -> int:
     return 0
 
 
+def _main_with_fail_open() -> int:
+    """Top-level guard (issue #148): on any internal exception, surface a one-line
+    diagnostic to stderr and exit 0 instead of leaving the hook driver with an
+    opaque non-zero exit. Fail-open is safe: a broken scanner did not see the
+    content it was meant to scan, and all four entry points have allow-tag bypasses.
+    """
+    try:
+        return run_credential_scanner()
+    except Exception as exc:  # noqa: BLE001 — last-resort guard
+        print(f"credential_scanner internal error (failing open): {exc!r}", file=sys.stderr)
+        return 0
+
+
 if __name__ == "__main__":
-    sys.exit(run_credential_scanner())
+    sys.exit(_main_with_fail_open())

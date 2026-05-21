@@ -12,6 +12,9 @@ cd "$SITE_DIR"
 npm ci --prefer-offline 2>/dev/null || npm install
 npm run build
 
+echo "=== Verifying CSP inline-script hashes ==="
+node "$SITE_DIR/scripts/verify-csp-hash.mjs"
+
 echo "=== Building Docusaurus docs ==="
 cd "$DOCUSAURUS_DIR"
 npm ci --prefer-offline 2>/dev/null || npm install

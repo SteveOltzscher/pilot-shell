@@ -241,6 +241,12 @@ _NUDGE_BUILTIN_GLOB = (
     "returns the indexed tree faster (with language and symbol metadata). Proceed if you "
     "need exact-pattern matching."
 )
+_NUDGE_CTX_TIMEOUT = (
+    "⚠️ No `timeout` parameter on this context-mode call. Without one, no server-side "
+    "timer fires — a hung script can run for 15+ minutes before the MCP RPC layer aborts. "
+    "Pass `timeout` (ms) sized to the work: 30000 simple grep · 120000 medium script · "
+    "300000 heavy batch · 600000 long build. Default when unsure: 60000."
+)
 
 _BASH_NUDGE_BY_CATEGORY: dict[str, str] = {
     "grep": _NUDGE_BASH_GREP,
@@ -322,6 +328,25 @@ def _builtin_tool_nudge(tool_name: str) -> str | None:
     return None
 
 
+def _ctx_timeout_nudge(tool_name: str, tool_input: dict) -> str | None:
+    """Return timeout-missing nudge for context-mode tools, throttled once per session.
+
+    Fires when `timeout` is absent, None, or a non-positive value. `timeout: 0` is
+    treated as missing because the MCP server treats it as 'no server-side timer'.
+    """
+    if tool_name not in _CTX_TIMEOUT_NUDGE_TOOLS:
+        return None
+    if not isinstance(tool_input, dict):
+        return None
+    timeout = tool_input.get("timeout")
+    if isinstance(timeout, (int, float)) and not isinstance(timeout, bool) and timeout > 0:
+        return None
+    if _nudge_already_sent("ctx_timeout"):
+        return None
+    _mark_nudge_sent("ctx_timeout")
+    return _NUDGE_CTX_TIMEOUT
+
+
 def _normalize_git_command(command: str) -> str:
     """Strip leading `git -C <path>` / `git -c <key=val>` global options so patterns can match the subcommand.
 
@@ -341,6 +366,10 @@ def _normalize_git_command(command: str) -> str:
 # against arbitrary source produces false positives. Known gap; revisit if abuse appears.
 _CTX_EXECUTE_TOOL = "mcp__plugin_context-mode_context-mode__ctx_execute"
 _CTX_BATCH_EXECUTE_TOOL = "mcp__plugin_context-mode_context-mode__ctx_batch_execute"
+_CTX_EXECUTE_FILE_TOOL = "mcp__plugin_context-mode_context-mode__ctx_execute_file"
+_CTX_TIMEOUT_NUDGE_TOOLS: frozenset[str] = frozenset(
+    {_CTX_EXECUTE_TOOL, _CTX_BATCH_EXECUTE_TOOL, _CTX_EXECUTE_FILE_TOOL}
+)
 
 
 def _extract_shell_commands(tool_name: str, tool_input: dict) -> list[str]:
@@ -479,6 +508,12 @@ def run_tool_redirect() -> int:
             if nudge:
                 print(pre_tool_use_context(nudge))
                 return 0
+
+    if tool_name in _CTX_TIMEOUT_NUDGE_TOOLS:
+        nudge = _ctx_timeout_nudge(tool_name, hook_data.get("tool_input", {}))
+        if nudge:
+            print(pre_tool_use_context(nudge))
+            return 0
 
     if tool_name in {"Grep", "Glob"}:
         nudge = _builtin_tool_nudge(tool_name)

@@ -14,6 +14,19 @@ When compaction occurs, your summary must preserve: active plan path + status, c
 
 To analyze, count, filter, compare, parse, or transform data: **write code** via `ctx_execute(language, code)` and `console.log()` only the answer. Don't read raw data into context. Pure JS, Node.js built-ins (`fs`, `path`, `child_process`), `try/catch`, handle null. One script replaces ten tool calls.
 
+## Pass an explicit `timeout` — MANDATORY
+
+`ctx_execute`, `ctx_batch_execute`, and `ctx_execute_file` accept an optional `timeout` (milliseconds). **When omitted, no server-side timer fires** — a slow grep, hung subprocess, or runaway script can sit for 15+ minutes before the MCP host RPC layer aborts. Always pass a `timeout` sized to what you expect the command to do. The `tool_redirect` hook nudges (soft, once per session) when `timeout` is missing.
+
+| Command shape | `timeout` (ms) |
+|---------------|----------------|
+| Simple grep, file listing, `jq` filter, single short script | `30000` (30 s) |
+| Medium script — multi-file analysis, JSON processing, dozens of fetches | `120000` (2 min) |
+| Heavy batch — many network calls, large data processing, slow CLIs | `300000` (5 min) |
+| Long build (Gradle/Maven/SBT, full test suite, container build) | up to `600000` (10 min) |
+
+**Default when unsure**: `60000` (1 min). Pick the smallest bucket the work fits into — most scripts finish in <10 s. A grep that hits the 30-s cap is a signal that the search is too broad or the path is wrong — refine, don't bump the timeout. With `concurrency > 1` in `ctx_batch_execute`, `timeout` applies **per command**, not as a shared budget.
+
 ## Blocked Commands
 
 | Command | Why | Use instead |
@@ -74,6 +87,7 @@ BM25 uses OR semantics — more matched terms rank higher. Use 2–4 specific te
 4. Bash whitelist only — file mutations, git writes, navigation, process control, package install.
 5. Never `ctx_index(content: large_data)` — always `ctx_index(path: ...)`.
 6. Don't re-index data already in context.
+7. Always pass a `timeout` to `ctx_execute` / `ctx_batch_execute` / `ctx_execute_file` — omitting it allows multi-minute hangs (see *Pass an explicit `timeout`*).
 
 ## Subagent Routing
 

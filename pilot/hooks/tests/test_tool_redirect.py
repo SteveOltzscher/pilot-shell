@@ -1144,3 +1144,71 @@ class TestDangerousGitContextMode:
         code, output = _run_with_input(_CTX_BATCH, {"commands": [{"label": "a", "command": "ls"}, "not a dict", None]})
         assert code == 0
         assert not _is_denied(output)
+
+
+_CTX_FILE = "mcp__plugin_context-mode_context-mode__ctx_execute_file"
+
+
+@pytest.mark.usefixtures("fresh_throttle")
+class TestCtxTimeoutNudge:
+    """Soft nudge fires once per session when context-mode tools omit `timeout`.
+
+    Without `timeout` the MCP host's RPC timeout governs — a hung script can run
+    for 15+ min. The nudge tells Claude to size `timeout` per the rule's table.
+    """
+
+    def test_nudges_ctx_execute_missing_timeout(self):
+        code, output = _run_with_input(_CTX_EXEC, {"language": "shell", "code": "ls"})
+        assert code == 0
+        assert _has_nudge(output)
+        assert "timeout" in _nudge_text(output).lower()
+
+    def test_no_nudge_when_ctx_execute_has_timeout(self):
+        code, output = _run_with_input(_CTX_EXEC, {"language": "shell", "code": "ls", "timeout": 30000})
+        assert code == 0
+        assert not _has_nudge(output)
+
+    def test_nudges_ctx_batch_execute_missing_timeout(self):
+        code, output = _run_with_input(_CTX_BATCH, {"commands": [{"label": "x", "command": "ls"}], "queries": ["q"]})
+        assert code == 0
+        assert _has_nudge(output)
+
+    def test_no_nudge_when_ctx_batch_execute_has_timeout(self):
+        code, output = _run_with_input(
+            _CTX_BATCH,
+            {"commands": [{"label": "x", "command": "ls"}], "queries": ["q"], "timeout": 60000},
+        )
+        assert code == 0
+        assert not _has_nudge(output)
+
+    def test_nudges_ctx_execute_file_missing_timeout(self):
+        code, output = _run_with_input(_CTX_FILE, {"path": "foo.py", "language": "python", "code": "print(1)"})
+        assert code == 0
+        assert _has_nudge(output)
+
+    def test_no_nudge_when_ctx_execute_file_has_timeout(self):
+        code, output = _run_with_input(
+            _CTX_FILE,
+            {"path": "foo.py", "language": "python", "code": "print(1)", "timeout": 30000},
+        )
+        assert code == 0
+        assert not _has_nudge(output)
+
+    def test_throttled_after_first_nudge(self):
+        """Nudge fires once per session — second call without timeout stays silent."""
+        _run_with_input(_CTX_EXEC, {"language": "shell", "code": "ls"})
+        code, output = _run_with_input(_CTX_EXEC, {"language": "shell", "code": "echo hi"})
+        assert code == 0
+        assert not _has_nudge(output)
+
+    def test_zero_timeout_treated_as_missing(self):
+        """`timeout: 0` is invalid (no-op) — treat as missing and nudge."""
+        code, output = _run_with_input(_CTX_EXEC, {"language": "shell", "code": "ls", "timeout": 0})
+        assert code == 0
+        assert _has_nudge(output)
+
+    def test_dangerous_git_still_blocks_when_timeout_missing(self):
+        """The dangerous-git deny must take precedence over the timeout nudge."""
+        code, output = _run_with_input(_CTX_EXEC, {"language": "shell", "code": "git reset --hard HEAD~1"})
+        assert code == 2
+        assert _is_denied(output)

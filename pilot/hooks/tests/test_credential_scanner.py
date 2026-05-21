@@ -969,3 +969,43 @@ class TestSubprocess:
             env=env,
         )
         assert result.returncode == 0
+
+
+class TestFailOpenOnInternalError:
+    """Issue #148 — opaque non-zero hook exits with `No stderr output`.
+
+    The scanner must never crash the hook driver: `signal.signal` raises on
+    non-main threads, and any other internal exception must surface a
+    diagnostic on stderr instead of producing an opaque failure.
+    """
+
+    def test_regex_timeout_no_raise_on_non_main_thread(self) -> None:
+        import threading
+
+        captured: list[BaseException] = []
+
+        def target() -> None:
+            try:
+                with credential_scanner._regex_timeout():
+                    pass
+            except BaseException as exc:  # noqa: BLE001 — capturing for assertion
+                captured.append(exc)
+
+        t = threading.Thread(target=target)
+        t.start()
+        t.join()
+        assert not captured, f"_regex_timeout raised on non-main thread: {captured!r}"
+
+    def test_main_with_fail_open_catches_runtime_error(
+        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Internal exceptions must exit 0 with a stderr diagnostic, not crash the hook driver."""
+
+        def boom() -> int:
+            raise RuntimeError("synthetic-fault")
+
+        monkeypatch.setattr(credential_scanner, "run_credential_scanner", boom)
+        exit_code = credential_scanner._main_with_fail_open()
+        captured = capsys.readouterr()
+        assert exit_code == 0, f"Expected fail-open exit 0, got {exit_code}"
+        assert "synthetic-fault" in captured.err, f"Expected 'synthetic-fault' in stderr, got: {captured.err!r}"
