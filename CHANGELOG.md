@@ -2,6 +2,12 @@
 
 All notable changes to Pilot Shell will be documented in this file.
 
+## [8.10.5] - 2026-05-21
+
+### Bug Fixes
+
+- License grace periods, scanner fail-open, ctx-mode timeouts, /s CSP
+
 ## [8.10.4] - 2026-05-18
 
 ### Bug Fixes
