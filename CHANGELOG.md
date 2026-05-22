@@ -2,6 +2,12 @@
 
 All notable changes to Pilot Shell will be documented in this file.
 
+## [9.0.5] - 2026-05-22
+
+### Bug Fixes
+
+- Kill ~/.claude/pilot/ — hooks → ~/.claude/hooks/, scripts+ui → ~/.pilot/
+
 ## [9.0.4] - 2026-05-22
 
 ### Bug Fixes
