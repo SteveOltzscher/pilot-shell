@@ -2,6 +2,12 @@
 
 All notable changes to Pilot Shell will be documented in this file.
 
+## [9.1.0] - 2026-05-28
+
+### Features
+
+- Enable Codex CLI as a first-class agent alongside Claude Code 
+
 ## [9.0.6] - 2026-05-26
 
 ### Bug Fixes
