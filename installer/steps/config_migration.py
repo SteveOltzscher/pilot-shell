@@ -447,7 +447,7 @@ def _migration_v10(raw: dict[str, Any]) -> bool:
     `extendedContextOverrides` map, not the model literal. Legacy configs may
     contain `model: "opus[1m]"` or `skills.<key>: "sonnet[1m]"` from earlier
     versions. Normalize them to plain aliases. Explicit-ID `[1m]`
-    (e.g. `claude-opus-4-7[1m]`) is preserved verbatim — Custom users encode
+    (e.g. `claude-opus-4-8[1m]`) is preserved verbatim — Custom users encode
     their context window in the ID itself. Agents are not touched (no
     historical [1m] usage; out of scope for this issue).
     """

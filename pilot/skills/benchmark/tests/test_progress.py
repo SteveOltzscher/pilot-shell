@@ -157,14 +157,14 @@ class TestRenderPlanHeader:
             n_configs=2,
             n_runs=1,
             workers=4,
-            executor_model="claude-opus-4-7",
-            grader_model="claude-opus-4-7",
+            executor_model="claude-opus-4-8",
+            grader_model="claude-opus-4-8",
         )
         rendered = render_plan_header(plan, use_color=False)
         assert "evals.json" in rendered
         assert "skill @ pilot/skills/prd" in rendered
         assert "6 evals × 2 configs × 1 run = 12 runs" in rendered
-        assert "claude-opus-4-7" in rendered
+        assert "claude-opus-4-8" in rendered
         # No ANSI when use_color=False
         assert "\x1b[" not in rendered
 

@@ -25,7 +25,7 @@ def _is_opus(model: str) -> bool:
     """Return True iff ``model`` resolves to an Opus alias or explicit Opus ID.
 
     Strips the ``[1m]`` alias suffix (explicit IDs may legitimately carry it,
-    e.g. ``claude-opus-4-7[1m]``). Accepts the bare ``opus`` alias and any
+    e.g. ``claude-opus-4-8[1m]``). Accepts the bare ``opus`` alias and any
     explicit ID matching ``claude-opus(-|$)`` so misspellings like
     ``claude-opusculus-1`` are rejected.
     """

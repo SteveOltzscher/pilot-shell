@@ -179,9 +179,11 @@ class TestIsOpus:
     def test_accepts_explicit_opus_id(self) -> None:
         assert _is_opus("claude-opus-4-6") is True
         assert _is_opus("claude-opus-4-7") is True
+        assert _is_opus("claude-opus-4-8") is True
 
     def test_accepts_explicit_opus_id_with_1m(self) -> None:
         assert _is_opus("claude-opus-4-7[1m]") is True
+        assert _is_opus("claude-opus-4-8[1m]") is True
 
     def test_rejects_sonnet(self) -> None:
         assert _is_opus("sonnet") is False
