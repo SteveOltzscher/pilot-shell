@@ -35,14 +35,12 @@ def _get_max_context_tokens() -> int:
     if no cache exists yet (e.g., before the first statusline update).
     """
     try:
-        session_id = os.environ.get("PILOT_SESSION_ID", "").strip()
-        if session_id:
-            cache_file = Path.home() / ".pilot" / "sessions" / session_id / "context-pct.json"
-            if cache_file.exists():
-                data = json.loads(cache_file.read_text())
-                window = data.get("context_window_size")
-                if isinstance(window, int) and window > 0:
-                    return window
+        cache_file = Path.home() / ".pilot" / "sessions" / resolve_session_id() / "context-pct.json"
+        if cache_file.exists():
+            data = json.loads(cache_file.read_text())
+            window = data.get("context_window_size")
+            if isinstance(window, int) and window > 0:
+                return window
     except Exception:
         pass
     return 200_000
@@ -78,11 +76,8 @@ _TYPE_RE: re.Pattern[str] = re.compile(r"^Type:\s*(\w+)\s*$", re.MULTILINE)
 
 
 def _read_active_plan() -> dict | None:
-    """Read ~/.pilot/sessions/<PILOT_SESSION_ID>/active_plan.json or return None."""
-    session_id = os.environ.get("PILOT_SESSION_ID", "").strip()
-    if not session_id:
-        return None
-    plan_file = _sessions_base() / session_id / "active_plan.json"
+    """Read ~/.pilot/sessions/<session-id>/active_plan.json or return None."""
+    plan_file = _sessions_base() / resolve_session_id() / "active_plan.json"
     if not plan_file.exists():
         return None
     try:
@@ -136,6 +131,29 @@ def _read_pilot_config() -> dict | None:
     return data if isinstance(data, dict) else None
 
 
+# Ordered session-id sources — see launcher/session.py:_SESSION_ID_ENV_CHAIN for
+# the rationale. Duplicated here because hook scripts ship without the launcher
+# on sys.path (package boundary). Keep the two chains in sync.
+_SESSION_ID_ENV_CHAIN = ("PILOT_SESSION_ID", "CLAUDE_CODE_SESSION_ID", "CODEX_THREAD_ID")
+
+
+def resolve_session_id() -> str:
+    """Resolve the session id from the agent-native env chain.
+
+    Returns the first non-empty value among PILOT_SESSION_ID (set by the shell
+    wrapper / pilot binary), CLAUDE_CODE_SESSION_ID, CODEX_THREAD_ID; else
+    "default". Falling back to the agent-native ids — which are unique per
+    session and exported to every child process — keeps each session's state
+    isolated even when launched outside the wrapper (IDE/desktop), instead of
+    collapsing onto the shared "default" directory (issue #157 bleed).
+    """
+    for var in _SESSION_ID_ENV_CHAIN:
+        value = os.environ.get(var, "").strip()
+        if value:
+            return value
+    return "default"
+
+
 def _sessions_base() -> Path:
     """Get base sessions directory."""
     return Path.home() / ".pilot" / "sessions"
@@ -143,16 +161,14 @@ def _sessions_base() -> Path:
 
 def get_session_cache_path() -> Path:
     """Get session-scoped context cache path."""
-    session_id = os.environ.get("PILOT_SESSION_ID", "").strip() or "default"
-    cache_dir = _sessions_base() / session_id
+    cache_dir = _sessions_base() / resolve_session_id()
     cache_dir.mkdir(parents=True, exist_ok=True)
     return cache_dir / "context-cache.json"
 
 
 def get_session_plan_path() -> Path:
     """Get session-scoped active plan JSON path."""
-    session_id = os.environ.get("PILOT_SESSION_ID", "").strip() or "default"
-    return _sessions_base() / session_id / "active_plan.json"
+    return _sessions_base() / resolve_session_id() / "active_plan.json"
 
 
 def find_git_root() -> Path | None:
@@ -169,6 +185,47 @@ def find_git_root() -> Path | None:
     except Exception:
         pass
     return None
+
+
+def current_project_root() -> Path | None:
+    """Authoritative current project root, or None when it cannot be determined.
+
+    Resolves from CLAUDE_PROJECT_ROOT, else `git rev-parse --show-toplevel`
+    (which returns the repo root even when a hook runs from a subdirectory).
+
+    Deliberately does NOT fall back to ``Path.cwd()``: a bare cwd is not an
+    authoritative containment boundary. When a hook runs from a project
+    subdirectory with git unavailable, cwd is narrower than the real project
+    root, and treating it as the boundary makes ``plan_in_current_project``
+    wrongly reject a legitimate same-project plan. Returning None makes that
+    guard fail open instead — matching its documented intent.
+    """
+    root = os.environ.get("CLAUDE_PROJECT_ROOT", "").strip()
+    if root:
+        return Path(root)
+    return find_git_root()
+
+
+def plan_in_current_project(plan_file: Path) -> bool:
+    """True if plan_file lives inside the current project root.
+
+    Cross-session bleed guard: when PILOT_SESSION_ID is unset (e.g. the installed
+    `claude()` shell function isn't active because the terminal wasn't reloaded),
+    the session-scoped active_plan.json collapses to the shared "default" file, so
+    a /spec plan registered by ANOTHER repo's session can leak into an unrelated
+    repo. Spec-workflow hooks only act on a plan that actually lives in the project
+    this session is running in. Fails open (returns True -> legacy behavior) when
+    the project root cannot be determined, so legitimate guarding is never weakened.
+    """
+    root = current_project_root()
+    if root is None:
+        return True
+    try:
+        root_real = os.path.realpath(root)
+        plan_real = os.path.realpath(plan_file)
+        return os.path.commonpath([root_real, plan_real]) == root_real
+    except (ValueError, OSError):
+        return True
 
 
 def read_hook_stdin() -> dict:

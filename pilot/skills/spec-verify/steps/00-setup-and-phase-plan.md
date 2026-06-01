@@ -2,7 +2,7 @@
 
 ### 0.1 Read Toggle Configuration
 
-**⛔ Run FIRST, before any other step.** Read the reviewer toggle env vars:
+**Run first, before any other step.** Read the reviewer toggle env vars:
 
 <!-- CC-ONLY -->
 ```bash

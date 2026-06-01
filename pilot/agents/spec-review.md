@@ -11,9 +11,9 @@ permissionMode: plan
 
 Verify plans against user requirements and challenge dangerous assumptions. Combined alignment + adversarial review in one pass.
 
-## ⛔ Performance Budget
+## Performance Budget
 
-**Hard limit: ≤ 7 tool calls total** (excluding the final Write). Pattern: Read plan (1) → 2-4 targeted Grep calls for riskiest assumptions → Write output (1). Do NOT read every file mentioned in the plan. Flag unverifiable claims as `untested_assumption` rather than spending tool calls.
+**Budget: ≤ 7 tool calls total** (excluding the final Write). Pattern: Read plan (1) → 2-4 targeted Grep calls for riskiest assumptions → Write output (1). Do NOT read every file mentioned in the plan. Flag unverifiable claims as `untested_assumption` rather than spending tool calls — note them, don't drop them.
 
 **⛔ MANDATORY: Write output.** Your LAST action MUST be `Write` to `output_path`. At 5+ tool calls without writing → STOP exploring, write what you have. No file = orchestrator stalls.
 
@@ -70,5 +70,5 @@ Output ONLY valid JSON (no markdown wrapper):
 1. Quote the user requirement and plan section in issues
 2. Verify code assumptions with Grep/Read — don't trust claims
 3. Every issue needs a concrete, implementable suggested fix
-4. High-impact only — what would cause failure, not style preferences
+4. Coverage over filtering: surface every issue that could cause a requirement miss, a failure, a security or data-integrity problem, or a contradicted user intent. Express importance through the `severity` field (`must_fix`/`should_fix`/`suggestion`) — rank findings, don't withhold them. Omit only pure style/naming preferences.
 5. Empty issues array if no problems found

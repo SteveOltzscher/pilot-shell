@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import time
@@ -31,6 +32,33 @@ def _get_pilot_version() -> str:
         except Exception:
             pass
     return __version__
+
+
+def _get_active_trial_days() -> int | None:
+    """Return remaining trial days when on an active trial, else None.
+
+    Lets the success panel reinforce that an in-product trial is running and how
+    long is left. Returns None for paid/expired/no-license states or any error.
+    """
+    pilot_path = Path.home() / ".pilot" / "bin" / "pilot"
+    if not pilot_path.exists():
+        return None
+    try:
+        result = subprocess.run(
+            [str(pilot_path), "trial", "--check", "--json"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode != 0 or not result.stdout.strip():
+            return None
+        data = json.loads(result.stdout.strip())
+        if data.get("license_state") == "active" and data.get("tier") == "trial":
+            days = data.get("days_remaining")
+            return int(days) if days is not None else None
+    except (subprocess.SubprocessError, json.JSONDecodeError, OSError, ValueError):
+        pass
+    return None
 
 
 class FinalizeStep(BaseStep):
@@ -132,6 +160,14 @@ class FinalizeStep(BaseStep):
         if not ui.quiet:
             ui.rule()
             ui.print()
+            trial_days = _get_active_trial_days()
+            if trial_days is not None:
+                ui.print(
+                    f"  [bold cyan]✦ Free trial active:[/bold cyan] {trial_days} days remaining "
+                    "[muted](shown in the statusline & Console)[/muted]"
+                )
+                ui.print("  [muted]Subscribe anytime: [/muted][cyan]https://pilot-shell.com/pricing[/cyan]")
+                ui.print()
             ui.print("  [bold yellow]⭐ Star this repo:[/bold yellow] https://github.com/maxritter/pilot-shell")
             ui.print()
             ui.print(f"  [muted]Installed version: {_get_pilot_version()}[/muted]")

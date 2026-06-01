@@ -30,6 +30,8 @@ dev = [
     "vulture>=2.14",
     "tox>=4.28.4",
     "build>=1.3.0",
+    "hypothesis>=6.0",
+    "import-linter>=2.0",
 ]
 
 [tool.pytest.ini_options]
@@ -48,7 +50,7 @@ filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::pytest.PytestUnraisableExceptionWarning",
 ]
-norecursedirs = ["target/**", ".venv/**", "**/.tox/**", "**/build/**", "misc/"]
+norecursedirs = ["target/**", ".venv/**", "**/.tox/**", "**/build/**", "misc/", ".hypothesis"]
 
 [tool.ruff]
 line-length = 120
@@ -72,6 +74,7 @@ select = [
     "F",       # pyflakes
     "I",       # isort
     "ERA",     # eradicate (detect commented-out code)
+    "B",       # flake8-bugbear (likely bugs; noisy codes neutralized in `ignore`)
     "PLR0913", # too-many-arguments (max 6)
     "PLR0915", # too-many-statements (max 60)
 ]
@@ -115,9 +118,14 @@ max-statements = 60
 "installer/steps/*" = ["PLR0913", "PLR0915"]
 
 [tool.vulture]
-exclude = [".venv/**", "target/**", "**/.tox/**", "**/build/**"]
+# Tests excluded: pytest-injected mocks/fixtures read like unused vars to vulture.
+exclude = [".venv/**", "target/**", "**/.tox/**", "**/build/**", "**/tests/**"]
 min_confidence = 80
-paths = ["installer"]
+paths = ["installer", "launcher", "pilot/hooks"]
+
+[tool.coverage.run]
+# Branch coverage exposes untested error/edge branches; applies wherever --cov runs.
+branch = true
 
 [tool.basedpyright]
 include = [
@@ -144,3 +152,14 @@ reportUnknownMemberType = false
 reportGeneralTypeIssues = true
 reportOptionalMemberAccess = true
 reportImplicitRelativeImport = false
+
+[tool.importlinter]
+# Mechanically enforce the documented launcher ⊥ installer boundary: launcher is
+# Cython-compiled into a standalone binary, installer runs as its own package —
+# neither may import the other (see .claude/rules/pilot-shell-package-boundaries.md).
+root_packages = ["launcher", "installer"]
+
+[[tool.importlinter.contracts]]
+name = "launcher and installer are independent"
+type = "independence"
+modules = ["launcher", "installer"]

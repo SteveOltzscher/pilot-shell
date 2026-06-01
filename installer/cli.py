@@ -325,6 +325,13 @@ def _handle_license_flow(
             console.print()
             if not _prompt_license_key(console, project_dir):
                 return 1
+        else:
+            console.print()
+            console.success(f"7-day free trial activated — {days} days remaining.")
+            if not console.quiet:
+                console.print("  [muted]Your trial days appear in the statusline and the Console.[/muted]")
+                console.print("  [muted]Subscribe anytime: [/muted][cyan]https://pilot-shell.com/pricing[/cyan]")
+                console.print()
 
     return None
 

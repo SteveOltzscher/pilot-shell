@@ -1,6 +1,6 @@
 ## Step 5: Check for Console Annotation Feedback (Before Approval)
 
-**⛔ Run this BEFORE Step 6 (approval).** Check if the user has annotated the plan in the Console's Specifications tab. Annotations auto-save to JSON — no "Send Feedback" button needed.
+**Run this before Step 6 (approval).** Check if the user has annotated the plan in the Console's Specifications tab. Annotations auto-save to JSON — no "Send Feedback" button needed.
 
 1. Derive annotation file: `docs/plans/.annotations/<plan-filename>.json`
 2. Read the annotation file with the Read tool. If the file doesn't exist, treat as `NO_FEEDBACK`. If it exists, check whether `planAnnotations` has any entries (`FEEDBACK_EXISTS`) or is empty/missing (`NO_FEEDBACK`).

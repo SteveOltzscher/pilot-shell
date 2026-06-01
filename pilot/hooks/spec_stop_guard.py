@@ -23,10 +23,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from _lib.util import (
+    _read_plan_approved_and_type,
     _sessions_base,
     build_objective_reinjection,
     get_session_plan_path,
     is_waiting_for_user_input,
+    plan_in_current_project,
     stop_block,
 )
 
@@ -67,6 +69,27 @@ def get_handoff_sentinel_path() -> Path:
     return guard_dir / "spec-handoff-pending"
 
 
+def get_approval_sentinel_path() -> Path:
+    """Session-scoped path to the plan-approval-pending sentinel.
+
+    Codex converts AskUserQuestion to a plain-text numbered prompt, so
+    `is_waiting_for_user_input` (AskUserQuestion-only) never recognizes its
+    approval-wait turn. Without a signal the stop guard would block the
+    approval-wait stop and inject "IMMEDIATELY continue working", which a literal
+    agent obeyed by editing `Approved: No -> Yes` itself and bypassing the user.
+
+    The Codex approval step writes this sentinel before ending its turn; the stop
+    guard honors it ONLY while the plan is still unapproved (Approved: No), so the
+    implement-phase block (Approved: Yes) is preserved. Stale sentinels (older than
+    HANDOFF_SENTINEL_MAX_AGE_SECONDS — e.g. PID reuse / crashed session) are
+    discarded, not honored.
+    """
+    session_id = os.environ.get("PILOT_SESSION_ID", "").strip() or "default"
+    guard_dir = _sessions_base() / session_id
+    guard_dir.mkdir(parents=True, exist_ok=True)
+    return guard_dir / "spec-approval-pending"
+
+
 def find_active_plan() -> tuple[Path | None, str | None]:
     """Find the active plan for THIS session via session-scoped active_plan.json."""
     plan_json = get_session_plan_path()
@@ -87,6 +110,12 @@ def find_active_plan() -> tuple[Path | None, str | None]:
         project_root = os.environ.get("CLAUDE_PROJECT_ROOT", str(Path.cwd()))
         plan_file = Path(project_root) / plan_file
     if not plan_file.exists():
+        return None, None
+
+    # Cross-session bleed guard: ignore an active plan that isn't part of this
+    # project (e.g. a COMPLETE plan from another repo's /spec session leaking in
+    # through the shared "default" active_plan.json when PILOT_SESSION_ID unset).
+    if not plan_in_current_project(plan_file):
         return None, None
 
     try:
@@ -166,6 +195,24 @@ def main() -> int:
     plan_path, status = find_active_plan()
     if plan_path is None or status is None:
         return 0
+
+    # Approval-wait pause for agents that cannot emit AskUserQuestion (Codex):
+    # while the plan is still unapproved, a fresh approval-pending sentinel grants
+    # permission to stop so the user can actually answer the approval question.
+    # Honored ONLY for unapproved plans — once Approved: Yes flips, the
+    # implement-phase block re-engages. Stale sentinels are discarded, not honored.
+    approval_sentinel = get_approval_sentinel_path()
+    if approval_sentinel.exists():
+        try:
+            age = time.time() - approval_sentinel.stat().st_mtime
+        except OSError:
+            age = 0.0
+        if age > HANDOFF_SENTINEL_MAX_AGE_SECONDS:
+            approval_sentinel.unlink(missing_ok=True)
+        else:
+            approved, _ = _read_plan_approved_and_type(str(plan_path))
+            if not approved:
+                return 0
 
     state_file = get_stop_guard_path()
     state = _load_state(state_file)

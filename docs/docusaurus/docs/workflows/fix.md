@@ -66,7 +66,7 @@ Lint + types + build (when applicable), then the full anti-regression suite, onc
 
 ### Finalise
 
-Worktree mode: bundle test + fix into one `fix:` commit. Approval gate fires only if **Plan Approval** is enabled. The completion report includes a mandatory **E2E** line documenting what was actually run.
+If the **Changes Review** or **Codex Companion Changes Review** toggle is on, the corresponding reviewer audits the fix first — the same reviewers `/spec` runs after implementation. Findings are auto-fixed by severity before the commit and the approval gate, so review-driven changes land in the single bundled commit. Worktree mode: bundle test + fix into one `fix:` commit. Approval gate fires only if **Plan Approval** is enabled. The completion report includes a mandatory **E2E** line documenting what was actually run.
 
 ## When to bail out — use `/spec` instead
 
@@ -99,8 +99,10 @@ The full lane (`/spec`) adds: Behavior Contract, three-task structure, plan file
 | --- | --- | --- |
 | **Ask Questions** | On | Investigation skips clarifying questions and uses defaults. |
 | **Plan Approval** | On | The end-of-flow approval gate is skipped. |
+| **Changes Review** | On | The native `changes-review` agent does not audit the fix at finalise. |
+| **Codex Companion Changes Review** | Off | No second-opinion Codex review of the fix (Claude Code only; needs the Codex plugin). |
 
-When both are off, `/fix` runs end-to-end with no user interaction. Worktree isolation is not honoured — use `/spec` if you want a worktree.
+When **Ask Questions** and **Plan Approval** are both off, `/fix` runs end-to-end with no user interaction. Worktree isolation is not honoured — use `/spec` if you want a worktree.
 
 ## When to use `/spec` vs `/fix`
 

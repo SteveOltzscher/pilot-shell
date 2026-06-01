@@ -5,7 +5,7 @@
 CodeGraph (structure) and Semble (intent) are primary; Grep/Glob are *verifiers* for completeness checks or known-string lookups.
 
 <!-- CC-ONLY -->
-Never start a code-search task with Grep/Glob.
+Reach for CodeGraph or Semble first on a code-search task; drop to Grep/Glob to verify their results or to find exact text in a known file.
 <!-- /CC-ONLY -->
 <!-- CODEX-START
 In Codex, spend graph calls only when the graph can answer the next question. For docs, rules, markdown, config, UI copy, reviews of a known diff, or named paths, start with direct file reads, `git diff`, or Semble. Call CodeGraph only after that if a runtime symbol relationship, call path, or blast radius is genuinely unknown.
@@ -20,8 +20,8 @@ CodeGraph and Semble are **co-primary**. Pick by scenario, not by habit.
 
 | Scenario | Tool |
 |----------|------|
-| Start any new task | `codegraph_context(task=...)` — ALWAYS FIRST |
-| Find a symbol by name | `codegraph_search` (NOT Grep) |
+| Orient on a new task | `codegraph_context(task=...)` — the fastest way to surface entry points |
+| Find a symbol by name | `codegraph_search` |
 | Enumerate callers / callees | `codegraph_callers` + `codegraph_callees`, then `Grep` for completeness |
 | Blast radius | `codegraph_impact` |
 | Deep dive across known symbols | `codegraph_explore(query="SymA SymB file.ts")` |
@@ -71,7 +71,7 @@ Grep/Glob: (1) verifying CodeGraph/Semble completeness, (2) exact text/regex in 
 ### Project Policies
 
 - **File size:** aim < 800 lines. > 1000 is a split signal — only when it's the focus of the current task, not a side-refactor. Test files exempt.
-- **⛔ Dependency check** before modifying any function: `codegraph_callers` + `codegraph_callees`, then Grep as completeness check.
+- **Dependency check:** before modifying a shared or non-trivial function, trace `codegraph_callers` + `codegraph_callees` (then Grep for completeness) — it catches callers you'd otherwise miss. A self-contained local function the plan already isolated doesn't need it.
 - **Self-correction:** fix obvious mistakes (syntax, typos, missing imports) in code you're actively writing. Do NOT auto-fix code the user edited — report it.
 - **Performance:** hot paths (render loops, request handlers, polling) must cache/memoize. Use lighter alternatives for heavy deps. Don't redo work when input hasn't changed.
 - **Diagnostics:** check before starting, after changes. Fix all errors before marking complete.

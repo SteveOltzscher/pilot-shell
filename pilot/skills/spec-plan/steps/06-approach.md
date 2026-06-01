@@ -1,6 +1,6 @@
 ## Step 6: Approach Selection & Design Decisions
 
-**⛔ Do NOT skip this step.** After exploration, always weigh competing approaches before committing. Even when one approach seems obvious, considering alternatives validates the choice and surfaces blind spots.
+**Don't skip this step.** After exploration, weigh competing approaches before committing. Even when one approach seems obvious, considering alternatives validates the choice and surfaces blind spots.
 
 **Two parts — both mandatory in-process; the plan only records the chosen path:**
 

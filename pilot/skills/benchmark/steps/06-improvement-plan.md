@@ -36,7 +36,7 @@ Read the relevant section of the rule/skill file (`target.path`). Diagnose WHY i
 | Symptom | Edit pattern | Example |
 |---|---|---|
 | Rule is buried late in the file | Move the cue earlier, ideally into a numbered list in the first 40 lines | Promote "use `@pytest.mark.unit`" from prose to a checklist item |
-| Rule uses soft language ("consider", "prefer") | Upgrade to mandatory (`⛔`, `MUST`, `MANDATORY`, `Required`) | `Consider adding @pytest.mark.unit` → `⛔ MUST decorate every unit test with @pytest.mark.unit` |
+| Rule uses soft language ("consider", "prefer") | Make it specific and rationale-backed — name the exact action and why it matters. Reserve `⛔`/`MUST` for genuine safety/correctness gates; on Opus 4.x, blanket emphasis overtriggers, so specificity beats volume | `Consider adding @pytest.mark.unit` → `Decorate every unit test with @pytest.mark.unit so the unit/integration split stays runnable` |
 | Rule states the what but not the how | Add a code example showing the exact form | Add `@pytest.mark.unit\ndef test_...` block |
 | Rule has competing guidance | Deduplicate or order by priority | Collapse two overlapping mocking sections |
 | Rule teaches the wrong thing (Regression) | Pinpoint the misleading phrase and rewrite, or remove it | Rewrite "mock at the global module" → "mock at the import site" |
@@ -60,8 +60,8 @@ Every proposal cites a location, current text, replacement, and which quadrant i
 [TARGET]   path/to/rule.md  L42–L44
   Quadrant: Unreachable (eval-1 #3 — hypothesis PBT)
   Current:  "Property-based testing is encouraged for complex inputs."
-  Propose:  "⛔ Property-based test required for parsers and serializers — use `hypothesis.@given`."
-  Lever:    Soft language → mandatory; adds the exact tool name.
+  Propose:  "Property-based test required for parsers and serializers — use `hypothesis.@given`."
+  Lever:    Soft language → specific, scoped requirement; names the exact tool.
 
 [EVALS]    eval-2 assertion #3
   Quadrant: Baseline (grader: "would pass for partially-mocked test")
@@ -105,7 +105,7 @@ Render in this exact order so the user always finds the same shape:
 
 Cap the body at ~25 lines so the user reads it in 60 seconds.
 
-## ⛔ Mandatory user question
+## Required user question
 
 <!-- CC-ONLY -->
 After presenting, you MUST ask which path to take. Do not silently apply edits. Use `AskUserQuestion` when the answer is genuinely uncertain; a plain question is fine when the recommendation is clear.

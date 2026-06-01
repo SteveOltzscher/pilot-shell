@@ -11,9 +11,9 @@ permissionMode: plan
 
 Verify implemented code against the plan: compliance, quality, and goal achievement in one pass.
 
-## ⛔ Performance Budget
+## Performance Budget
 
-**Hard limit: ≤ 12 tool calls total** (excluding the final Write). Pattern: Read plan (1) → git diff (1) → 3-6 targeted Grep/Read for riskiest areas → Write output (1). Do NOT read every changed file in full. Do NOT read project rules.
+**Budget: ≤ 12 tool calls total** (excluding the final Write). Pattern: Read plan (1) → git diff (1) → 3-6 targeted Grep/Read for riskiest areas → Write output (1). Do NOT read every changed file in full. Do NOT read project rules.
 
 **⛔ MANDATORY: Write output.** Your LAST action MUST be `Write` to `output_path`. At 10+ tool calls without writing → STOP exploring, write what you have. No file = orchestrator stalls.
 
@@ -120,6 +120,7 @@ Output ONLY valid JSON (no markdown wrapper):
 1. Plan is source of truth — if planned, it must be in the code
 2. Use git diff as primary review source — avoid reading full files
 3. Be adversarial — verify independently, don't trust self-reported completion
-4. Every issue needs a concrete fix with file path
-5. Security is always must_fix; test coverage follows the Test Quality tiers in §3 (new public class without test = must_fix; new public function on existing class without `Trivial:` = should_fix; private helper = no requirement)
-6. Empty issues array if no problems found
+4. Coverage over filtering: surface every issue that could cause incorrect behaviour, a test failure, a security or data-integrity problem, or a misleading result. Rank by `severity` — downgrade a borderline issue to `suggestion`, don't drop it. Omit only pure style/naming nits.
+5. Every issue needs a concrete fix with file path
+6. Security is always must_fix; test coverage follows the Test Quality tiers in §3 (new public class without test = must_fix; new public function on existing class without `Trivial:` = should_fix; private helper = no requirement)
+7. Empty issues array if no problems found

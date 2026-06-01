@@ -4,7 +4,7 @@
 
 ### 1a: Clean Up Stale Spec-Review Findings (always run, before any launch)
 
-**⛔ ALWAYS run this first** — regardless of whether changes-review is enabled. Spec-review findings are stale artifacts from the planning phase that were already addressed during implementation.
+**Always run this first** — regardless of whether changes-review is enabled. Spec-review findings are stale artifacts from the planning phase that were already addressed during implementation.
 
 ```bash
 SESS_DIR="$HOME/.pilot/sessions/${PILOT_SESSION_ID:-default}"
@@ -14,7 +14,7 @@ test -d "$SESS_DIR" && find "$SESS_DIR" -maxdepth 1 -name 'findings-spec-review-
 ---
 
 <!-- CC-ONLY -->
-**⛔ If `PILOT_CHANGES_REVIEW_ENABLED` is `"false"` (from Step 0),** skip the rest of this step and proceed to Step 2. (Automated checks in Step 2 still run; only the agent-based review is skipped.)
+**If `PILOT_CHANGES_REVIEW_ENABLED` is `"false"` (from Step 0),** skip the rest of this step and proceed to Step 2. (Automated checks in Step 2 still run; only the agent-based review is skipped.)
 
 **When enabled:** Launch the reviewer IMMEDIATELY — it works in the background while you run automated checks.
 
@@ -35,7 +35,7 @@ Output path: `~/.pilot/sessions/<session-id>/findings-changes-review-<plan-slug>
 
 #### 1c: Launch
 
-**⛔ Delete stale changes-review findings before launching** (previous run may have left a file):
+**Delete stale changes-review findings before launching** (previous run may have left a file):
 
 ```bash
 SESS_DIR="$HOME/.pilot/sessions/${PILOT_SESSION_ID:-default}"
@@ -70,7 +70,7 @@ Task(
 
 Launch Codex review NOW — it runs in parallel with the Claude reviewer above.
 
-**⛔ Codex-once rule.** Codex runs at most once per `/spec` invocation. Before launching, check the sentinel file. If it exists, the review already ran in this session — skip the launch and the collection sub-step in Step 3. Verify-phase iterations (re-verify after fixing findings, code-review-gate annotation fixes) do NOT trigger another Codex run.
+**Codex-once rule.** Codex runs at most once per `/spec` invocation. Before launching, check the sentinel file. If it exists, the review already ran in this session — skip the launch and the collection sub-step in Step 3. Verify-phase iterations (re-verify after fixing findings, code-review-gate annotation fixes) do NOT trigger another Codex run.
 
 ```bash
 SESS_ID="${PILOT_SESSION_ID:-default}"
@@ -115,7 +115,7 @@ pathlib.Path(os.environ["PROMPT_FILE"]).write_text(text)
 '
 ```
 
-3. Launch the task in background. **⛔ For `task`, the companion's `--background` flag IS supported** (unlike `review`/`adversarial-review`). Use the companion's own background mode — the launch command returns the job ID immediately on stdout. Capture the job ID for collection in Step 3.
+3. Launch the task in background. **For `task`, the companion's `--background` flag IS supported** (unlike `review`/`adversarial-review`). Use the companion's own background mode — the launch command returns the job ID immediately on stdout. Capture the job ID for collection in Step 3.
 
    ```
    Bash(
@@ -139,7 +139,7 @@ pathlib.Path(os.environ["PROMPT_FILE"]).write_text(text)
 **Do NOT wait** — proceed to Step 2 immediately. You'll be notified when the polling bash (Step 3) completes.
 <!-- /CC-ONLY -->
 <!-- CODEX-START
-**⛔ If `PILOT_CHANGES_REVIEW_ENABLED` is `"false"` (from Step 0),** skip the rest of this step and proceed directly to Step 2 (Automated Checks).
+**If `PILOT_CHANGES_REVIEW_ENABLED` is `"false"` (from Step 0),** skip the rest of this step and proceed directly to Step 2 (Automated Checks).
 
 **When enabled:** launch the managed Codex custom agent immediately. It runs while automated checks execute in Step 2.
 

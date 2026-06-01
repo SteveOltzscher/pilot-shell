@@ -42,10 +42,10 @@ The phase boundary is a default, not a wall — Clarify can drop back into 1-2 p
 The entire flow is conversational. One question at a time. No rushing to solutions.
 
 <!-- CC-ONLY -->
-**⛔ ALWAYS use the `AskUserQuestion` tool** for user questions during convergent phases (Steps 4-8) — never list numbered questions in plain text.
+**Use the `AskUserQuestion` tool for user questions during convergent phases (Steps 4-8)** — it renders a structured form; don't fall back to plain-text numbered questions.
 <!-- /CC-ONLY -->
 <!-- CODEX-START
-**⛔ ALWAYS use plain-text numbered options** for user questions — never refer to the unavailable Claude question tool as callable in Codex. Present 2-4 concrete options with trade-offs, and wait for the user's response.
+**Use plain-text numbered options for user questions** — the Claude question tool isn't callable in Codex. Present 2-4 concrete options with trade-offs, and wait for the user's response.
 
 ### Codex PRD Pacing Contract
 

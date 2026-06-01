@@ -20,13 +20,13 @@ Default is quick mode (direct execution).
 
 ## Task Management
 
-**⛔ ALWAYS use task management in quick mode.** Tasks are working memory — without them, requests get lost during compaction. Skip only for a truly trivial one-shot with empty `TaskList`.
+**Use task management in quick mode.** Tasks are working memory — without them, requests get lost during compaction. Skip only for a truly trivial one-shot with empty `TaskList`.
 
-### ⛔ Quick Mode: Task-First
+### Quick Mode: Task-First
 
 Every user request gets a task BEFORE any code/research/substantive response: TaskCreate → in_progress → work → completed.
 
-### ⛔ On-Demand Interrupts
+### On-Demand Interrupts
 
 When the user sends a new request mid-work: STOP, TaskCreate for the new request as your FIRST tool call, then assess priority. If it's not in the task list, it will be forgotten.
 
@@ -69,7 +69,7 @@ CODEX-END -->
 ## Tool Usage
 
 <!-- CC-ONLY -->
-### ⛔ Tool Parameter Names — Use EXACT names
+### Tool Parameter Names — Use EXACT names
 
 | Tool | Correct | Wrong |
 |------|---------|-------|
@@ -100,7 +100,7 @@ Use direct tools instead — see `development-practices.md` and `mcp-servers.md`
 Do not assume Claude Code's agent tool or subagent names exist in Codex. Use only agent tools that are actually listed in the current Codex tool schema; otherwise work directly with CodeGraph, Semble, shell commands, and file reads.
 CODEX-END -->
 
-### ⛔ Web Search/Fetch
+### Web Search/Fetch
 
 <!-- CC-ONLY -->
 Built-in `WebFetch` / `WebSearch` are hook-blocked. Use ToolSearch:

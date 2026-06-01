@@ -8,7 +8,7 @@
 | **Too many options** — "use pdfplumber, PyMuPDF, or camelot..." | Give one default, mention alternatives only if needed |
 | **No verification** — "deploy to staging" (how do you know it worked?) | Always include a verification command |
 | **Hardcoded paths** — `/Users/john/projects/my-app/...` | Relative paths or environment variables |
-| **Ambiguous language** — "Make sure to validate things properly" | `CRITICAL: Before calling create_project, verify: project name non-empty, at least one team member assigned` |
+| **Ambiguous language** — "Make sure to validate things properly" | `Before calling create_project, verify: project name non-empty, at least one team member assigned` |
 
 ### Iteration Signals
 

@@ -8,8 +8,8 @@
 CODEX-END -->
 
 - **Quick (Recommended for simple ideas)** — "Skip research, go straight to brainstorming or clarification"
-- **Standard** — "Quick web research: competitors, prior art, best practices (5-10 searches)"
-- **Deep** — "Thorough parallel research: multiple angles, comprehensive findings (uses sub-agents, higher token cost)"
+- **Standard** — "Light in-session web research: competitors, prior art, best practices (5-10 searches, stays in this conversation)"
+- **Deep** — "Full multi-angle research with source verification and a cited report (higher token cost)"
 
 ### Quick Tier
 
@@ -41,51 +41,38 @@ CODEX-END -->
 
 ### Deep Tier
 
-1. **Generate a research outline** with 3-5 research angles based on the topic. Examples:
+<!-- CC-ONLY -->
+Deep research is owned by the dedicated **`deep-research` skill** — a harness that decomposes the question into multiple angles, fans out parallel web searches, fetches and de-duplicates sources, adversarially verifies each claim, and synthesizes a cited report. Do **not** run searches or spawn your own sub-agents here; hand the whole research loop to the skill.
+
+1. **Compose a focused research question** from the idea plus everything learned in Step 1 — weave in the concrete constraints, stack, audience, and context you've gathered so the research is scoped, not generic. A sharp, specific question is the single biggest driver of report quality.
+2. **Invoke the skill:**
+   ```
+   Skill(skill="deep-research", args="<focused research question, constraints woven in>")
+   ```
+   - The skill may ask 2-3 clarifying questions if scope is still broad — answer them from PRD context where you can, otherwise relay them to the user.
+   - It runs a multi-agent workflow (higher token cost) and returns a cited, fact-checked report.
+3. **If the skill is unavailable or its run fails,** fall back to the **Standard tier** above (in-session web search) so research still happens — never silently skip it.
+4. **Synthesize the returned report** into the research summary, preserving source links and any confidence/caveat notes.
+
+**Cap:** none needed — the `deep-research` skill manages its own breadth and token budget.
+<!-- /CC-ONLY -->
+<!-- CODEX-START
+The `deep-research` skill is Claude-Code-only and unavailable in Codex, so Deep research in Codex uses the multi-angle in-session approach:
+
+1. **Generate a research outline** with 2-3 research angles based on the topic. Examples:
    - "Competitor landscape" — what exists, market positioning, pricing
    - "Technical approaches" — architectures, frameworks, implementation patterns
    - "User experience" — UX patterns, onboarding flows, common pain points
-   - "Prior art" — academic papers, blog posts, case studies
-<!-- CC-ONLY -->
-2. **Launch 2-4 web-search-agent sub-agents in parallel:**
-
-   For each research angle:
-   ```
-   Agent(
-     subagent_type="web-search-agent",
-     run_in_background=true,
-     prompt="Research angle: <angle_name>\n\nTopic: <user_topic>\n\nFocus on: <specific questions for this angle>\n\nReturn findings in this format:\n## <Angle Name>\n### Key Findings\n- ...\n### Sources\n- [Link](url)\n### Trade-offs & Considerations\n- ...\n\nWrite your findings to: <output_path>"
-   )
-   ```
-
-   Output path: `/tmp/prd-research-<angle-slug>.md`
-
-3. **Wait for all agents to complete** (bash polling):
-   ```bash
-   for i in $(seq 1 120); do
-     COUNT=$(ls /tmp/prd-research-*.md 2>/dev/null | wc -l)
-     [ "$COUNT" -ge <expected_count> ] && echo "ALL_DONE" && break
-     sleep 2
-   done
-   ```
-4. **Read all output files** and synthesize into a comprehensive research summary
-<!-- /CC-ONLY -->
-<!-- CODEX-START
-2. **Run searches sequentially** (one per angle, 3 search queries max per angle). Use the web-search MCP tool or `mcp__web_search__search` if available. For each angle:
+2. **Run searches sequentially** (one per angle, 2-3 search queries each). Use the web-search MCP tool (`mcp__web_search__search`) if available. For each angle:
    - Execute 2-3 targeted searches
    - Optionally fetch full pages for promising results via `mcp__web_fetch__fetch_url`
    - Compile findings per angle
-3. **Synthesize findings** across all angles into a comprehensive research summary
-CODEX-END -->
-5. **Present synthesized findings to user** — organized by angle, with key insights highlighted
-6. **Clean up temp files:** `find /tmp -maxdepth 1 -name 'prd-research-*.md' -delete`
+3. **Synthesize findings** across all angles into a comprehensive research summary.
 
-<!-- CC-ONLY -->
-**Cap:** Maximum 4 research angles, each limited to 5 search queries.
-<!-- /CC-ONLY -->
-<!-- CODEX-START
-**Codex cap:** Standard means 3-5 total searches. Deep means at most 2 research angles with 2-3 searches each unless the user explicitly asks for exhaustive research.
+**Codex cap:** at most 2 research angles with 2-3 searches each unless the user explicitly asks for exhaustive research.
 CODEX-END -->
+
+**Then (both agents):** present the synthesized findings to the user — organized by source/angle, key insights and caveats highlighted — before proceeding to ideation (Step 3) or clarification (Step 4).
 
 ### Research Output
 

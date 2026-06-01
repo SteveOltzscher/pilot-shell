@@ -1382,6 +1382,48 @@ class TestReapplyCustomization:
         assert "FAILED" in ui.error.call_args.args[0]
 
 
+class TestSyncPilotEnvVars:
+    """Tests for _sync_pilot_env_vars in ClaudeFilesStep (issue #154)."""
+
+    def test_calls_pilot_sync_env_when_binary_present(self, tmp_path):
+        from unittest.mock import MagicMock, patch
+
+        from installer.steps.claude_files import ClaudeFilesStep
+
+        pilot_bin = tmp_path / ".pilot" / "bin" / "pilot"
+        pilot_bin.parent.mkdir(parents=True)
+        pilot_bin.touch()
+
+        step = ClaudeFilesStep()
+
+        with (
+            patch("installer.steps.claude_files.Path.home", return_value=tmp_path),
+            patch("installer.steps.claude_files.subprocess.run") as mock_run,
+        ):
+            mock_run.return_value = MagicMock(returncode=0)
+            step._sync_pilot_env_vars()
+
+        mock_run.assert_called_once()
+        call_args = mock_run.call_args[0][0]
+        assert str(pilot_bin) in call_args
+        assert "sync-env" in call_args
+
+    def test_skips_silently_when_binary_missing(self, tmp_path):
+        from unittest.mock import patch
+
+        from installer.steps.claude_files import ClaudeFilesStep
+
+        step = ClaudeFilesStep()
+
+        with (
+            patch("installer.steps.claude_files.Path.home", return_value=tmp_path),
+            patch("installer.steps.claude_files.subprocess.run") as mock_run,
+        ):
+            step._sync_pilot_env_vars()
+
+        mock_run.assert_not_called()
+
+
 class TestBuildSkillMdFiles:
     """Tests for the _build_skill_md_files method (Task 3: installer integration)."""
 

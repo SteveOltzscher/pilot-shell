@@ -111,19 +111,19 @@ Pilot doesn't manage model preferences. Set the model with Claude Code's `/model
 
 ### Spec Workflow → Review Agents
 
-Two review agents run during `/spec` on Claude Code and Codex. Toggle each on or off; Claude Code runs them as Claude sub-agents, and Codex runs them as managed custom agents installed under `~/.codex/agents/`.
+Two review agents run during `/spec` on Claude Code and Codex; **Changes Review** also runs at the end of `/fix`. Toggle each on or off; Claude Code runs them as Claude sub-agents, and Codex runs them as managed custom agents installed under `~/.codex/agents/`.
 
 | Agent | Default | Role |
 |-------|---------|------|
 | **Spec Review** | On | Validates plans before implementation. Checks alignment with requirements, flags risky assumptions. |
-| **Changes Review** | On | Reviews code after implementation. Checks compliance, security, test coverage, goal achievement. |
+| **Changes Review** | On | Reviews code after `/spec` implementation and `/fix`. Checks compliance, security, test coverage, goal achievement. |
 
 **Codex Companion Reviewers (optional, Claude Code only)** — OpenAI Codex plugin reviewers that provide an independent second opinion while you are working inside Claude Code.
 
 | Agent | Default | Role |
 |-------|---------|------|
 | **Codex Companion Spec Review** | Off | Plugin plan review — second opinion before implementation. |
-| **Codex Companion Changes Review** | Off | Plugin code review — second opinion after implementation. |
+| **Codex Companion Changes Review** | Off | Plugin code review — second opinion after `/spec` and `/fix`. |
 
 ### Spec Workflow → Automation
 

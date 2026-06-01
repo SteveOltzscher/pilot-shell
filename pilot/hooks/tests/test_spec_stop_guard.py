@@ -707,6 +707,46 @@ class TestSessionScopedPlanDetection:
         assert _is_blocked(stdout)
         assert "cannot stop" in stdout.lower()
 
+    def test_ignores_plan_outside_current_project(self, tmp_path: Path) -> None:
+        """Cross-session bleed: a registered plan that lives OUTSIDE the current
+        project root must not block. Reproduces the failure where PILOT_SESSION_ID
+        is unset, active_plan.json collapses to the shared 'default' file, and a
+        /spec plan from another repo's session blocked stops in an unrelated repo.
+        """
+        project = tmp_path / "current-project"
+        plans_dir = project / "docs" / "plans"
+        plans_dir.mkdir(parents=True)
+
+        other_plans = tmp_path / "other-project" / "docs" / "plans"
+        other_plans.mkdir(parents=True)
+        foreign_plan = other_plans / "2026-02-06-foreign.md"
+        foreign_plan.write_text("# Foreign\n\nStatus: PENDING\nApproved: Yes\n")
+        _register_plan_for_session(foreign_plan, "PENDING")
+
+        with patch.dict(os.environ, {"CLAUDE_PROJECT_ROOT": str(project)}):
+            exit_code, stdout, _ = _run_subprocess({"stop_hook_active": False}, plans_dir)
+
+        assert exit_code == 0
+        assert not _is_blocked(stdout)
+
+    def test_blocks_absolute_plan_inside_current_project(self, tmp_path: Path) -> None:
+        """The project-scope guard must not over-suppress: an absolute plan path
+        INSIDE the current project root still blocks."""
+        project = tmp_path / "current-project"
+        plans_dir = project / "docs" / "plans"
+        plans_dir.mkdir(parents=True)
+
+        plan_file = plans_dir / "2026-02-06-in-project.md"
+        plan_file.write_text("# In Project\n\nStatus: PENDING\nApproved: No\n")
+        _register_plan_for_session(plan_file, "PENDING")
+
+        with patch.dict(os.environ, {"CLAUDE_PROJECT_ROOT": str(project)}):
+            exit_code, stdout, _ = _run_subprocess({"stop_hook_active": False}, plans_dir)
+
+        assert exit_code == 0
+        assert _is_blocked(stdout)
+        assert "cannot stop" in stdout.lower()
+
 
 class TestHandoffSentinel:
     """The model-switch handoff sentinel grants permission to stop while it lives.
@@ -813,3 +853,64 @@ class TestHandoffSentinel:
         assert exit_code == 0
         assert not _is_blocked(stdout)
         assert sentinel.exists(), "Fresh sentinel must survive the Stop event for the prompt hook to consume"
+
+
+class TestApprovalSentinel:
+    """The approval-pending sentinel lets an agent that cannot emit AskUserQuestion
+    (Codex) pause at the plan-approval gate.
+
+    Codex converts AskUserQuestion to a plain-text numbered prompt, so
+    `is_waiting_for_user_input` never fires for it — the stop guard would block
+    the approval-wait stop and inject 'continue working', which a literal agent
+    obeyed by self-approving the plan. The Codex approval step now writes this
+    sentinel before ending its turn; the stop guard honors it ONLY while the plan
+    is still unapproved, so the implement-phase block (Approved: Yes) is preserved.
+    """
+
+    def _make_plan(self, tmp_path: Path, approved: str) -> Path:
+        plans_dir = tmp_path / "docs" / "plans"
+        plans_dir.mkdir(parents=True)
+        plan_file = plans_dir / "2026-06-01-approval.md"
+        plan_file.write_text(f"# Approval Plan\n\nStatus: PENDING\nApproved: {approved}\n")
+        _register_plan_for_session(plan_file, "PENDING")
+        return plans_dir
+
+    def test_fresh_sentinel_allows_stop_when_unapproved(self, tmp_path: Path) -> None:
+        """Codex case: fresh approval sentinel + PENDING + Approved: No → allow the stop."""
+        plans_dir = self._make_plan(tmp_path, "No")
+        sentinel = _test_session_dir() / "spec-approval-pending"
+        sentinel.touch()
+
+        exit_code, stdout, _ = _run_subprocess({"stop_hook_active": False}, plans_dir)
+
+        assert exit_code == 0
+        assert not _is_blocked(stdout), "approval-wait stop must be allowed, not blocked-and-pushed-to-continue"
+        assert sentinel.exists(), "sentinel survives until the plan is approved or it is explicitly cleared"
+
+    def test_sentinel_ignored_when_approved(self, tmp_path: Path) -> None:
+        """Implement-phase protection: once Approved: Yes, the sentinel is ignored and the stop blocks."""
+        plans_dir = self._make_plan(tmp_path, "Yes")
+        sentinel = _test_session_dir() / "spec-approval-pending"
+        sentinel.touch()
+
+        exit_code, stdout, _ = _run_subprocess({"stop_hook_active": False}, plans_dir)
+
+        assert exit_code == 0
+        assert _is_blocked(stdout), "an approved plan must still block stops during implementation"
+
+    def test_stale_sentinel_discarded(self, tmp_path: Path) -> None:
+        """A stale approval sentinel (crashed prior session / PID reuse) is discarded, not honored."""
+        import os as _os
+        import time as _time
+
+        plans_dir = self._make_plan(tmp_path, "No")
+        sentinel = _test_session_dir() / "spec-approval-pending"
+        sentinel.touch()
+        stale_time = _time.time() - 7200  # 2 hours ago
+        _os.utime(sentinel, (stale_time, stale_time))
+
+        exit_code, stdout, _ = _run_subprocess({"stop_hook_active": False}, plans_dir)
+
+        assert exit_code == 0
+        assert _is_blocked(stdout), "stale approval sentinel must not grant a stop"
+        assert not sentinel.exists(), "stale approval sentinel must be unlinked"

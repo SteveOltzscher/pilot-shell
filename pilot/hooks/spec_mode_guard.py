@@ -18,6 +18,9 @@ import shlex
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+from _lib.util import resolve_session_id
+
 _CLAUDE_OPUS_PREFIX_RE = re.compile(r"^claude-opus(-|$)")
 
 
@@ -44,10 +47,7 @@ def _read_active_model_from_cache() -> str | None:
     first prompt after a session starts) — the caller treats None as "skip the
     Opus check" rather than as a block trigger.
     """
-    session_id = os.environ.get("PILOT_SESSION_ID", "").strip()
-    if not session_id:
-        return None
-    cache_file = Path.home() / ".pilot" / "sessions" / session_id / "context-pct.json"
+    cache_file = Path.home() / ".pilot" / "sessions" / resolve_session_id() / "context-pct.json"
     if not cache_file.exists():
         return None
     try:

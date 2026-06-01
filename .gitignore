@@ -245,6 +245,7 @@ spec-annotate
 changes-header
 review-output.json
 apm.yml
+docs/cairn
 .playwright-*/
 .apm
 .agents

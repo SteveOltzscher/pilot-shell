@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from _lib.util import (
     get_session_plan_path,
+    plan_in_current_project,
     read_hook_stdin,
 )
 
@@ -34,6 +35,27 @@ def _read_active_plan() -> dict | None:
         return json.loads(plan_path.read_text())
     except (json.JSONDecodeError, OSError):
         return None
+
+
+def _plan_belongs_to_project(plan_data: dict | None) -> bool:
+    """True when the active plan is absent OR lives in the current project.
+
+    Cross-session bleed guard: suppresses a foreign-project plan that leaked
+    through the shared "default" active_plan.json when PILOT_SESSION_ID is unset,
+    so compaction doesn't re-anchor the agent onto another repo's /spec plan.
+    Fails open for relative or unresolvable paths so the legacy informational
+    display is never weakened.
+    """
+    if not plan_data:
+        return True
+    plan_path = plan_data.get("plan_path")
+    if not isinstance(plan_path, str) or not plan_path:
+        return True
+    p = Path(plan_path)
+    if not p.is_absolute():
+        project_root = os.environ.get("CLAUDE_PROJECT_ROOT", str(Path.cwd()))
+        p = Path(project_root) / p
+    return plan_in_current_project(p)
 
 
 def _read_fallback_state(session_id: str) -> dict | None:
@@ -90,8 +112,16 @@ def run_post_compact_restore() -> int:
     session_id = hook_data.get("session_id", os.environ.get("PILOT_SESSION_ID", "default"))
 
     plan_data = _read_active_plan()
+    if not _plan_belongs_to_project(plan_data):
+        plan_data = None
 
     fallback_state = _read_fallback_state(session_id)
+    # Same cross-session bleed guard for the fallback branch: a pre-compact-state
+    # captured before the pre_compact guard landed (or from an older Pilot build)
+    # may still carry a foreign-project plan. Drop only that key, keeping other
+    # fallback fields (e.g. task_list, which is session-scoped).
+    if fallback_state and not _plan_belongs_to_project(fallback_state.get("active_plan")):
+        fallback_state = {k: v for k, v in fallback_state.items() if k != "active_plan"}
 
     message = _format_context_message(plan_data, fallback_state)
     platform = os.environ.get("CLAUDE_PROJECT_PLATFORM") or hook_data.get("platform") or ""

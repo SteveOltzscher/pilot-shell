@@ -7,9 +7,9 @@
 3. **Check current state:** `git status --short`, `git diff --name-only`, plan progress (`[x]` vs `[ ]`)
 
 <!-- CC-ONLY -->
-**Research tools during implementation:** CodeGraph (`codegraph_context` to orient on each task, `codegraph_explore` for deep code understanding in one call, `codegraph_callers`/`codegraph_callees` before modifying any function, `codegraph_impact` for blast radius), Context7 (library docs), Semble `semble search` or `mcp__semble__search` (find patterns by intent), `semble find-related` (discover parallel implementations), grep-mcp (production examples).
+**Research tools during implementation:** CodeGraph (`codegraph_context` to orient on each task, `codegraph_explore` for deep code understanding in one call, `codegraph_callers`/`codegraph_callees` before modifying a shared or non-trivial function, `codegraph_impact` for blast radius), Context7 (library docs), Semble `semble search` or `mcp__semble__search` (find patterns by intent), `semble find-related` (discover parallel implementations), grep-mcp (production examples).
 
-**⛔ Before modifying any function:** Run `codegraph_callers` + `codegraph_callees` to understand the call graph. This is not optional — it catches callers you'd otherwise miss.
+**Before modifying a shared or non-trivial function:** trace `codegraph_callers` + `codegraph_callees` — it catches callers you'd otherwise miss. A self-contained local function the plan already isolated doesn't need it.
 <!-- /CC-ONLY -->
 <!-- CODEX-START
 **Research tools during implementation:** Use CodeGraph for structural runtime-code questions (`codegraph_context` when entry points are unknown, `codegraph_explore` for known symbols, `codegraph_callers`/`codegraph_callees` before non-local function changes, `codegraph_impact` for blast radius), Context7 for library docs, Semble for intent/pattern discovery, and grep-mcp for production examples.

@@ -1,6 +1,6 @@
 ## Step 2: Read Existing Rules & Skills
 
-**MANDATORY FIRST STEP.**
+**Do this first.**
 
 1. Derive the project slug (see Step 1 → Project Slug)
 2. `find .claude/rules/ -name '*.md' -not -name 'README.md' 2>/dev/null | sort` — read each rule file (including subdirectories)

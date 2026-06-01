@@ -292,6 +292,31 @@ class TestLicenseFlowTrialFallback:
         mock_prompt.assert_not_called()
         assert result is None
 
+    @patch("installer.cli._start_trial", return_value=7)
+    @patch("installer.cli._check_trial_used", return_value=(False, False))
+    def test_trial_success_announces_activation_with_days(self, mock_check_trial, mock_start_trial, tmp_path: Path):
+        """A freshly started trial is announced with its remaining days."""
+        from installer.cli import _handle_license_flow
+        from installer.ui import Console
+
+        console = Console(non_interactive=False, quiet=True)
+        console.success = MagicMock()
+
+        result = _handle_license_flow(
+            console,
+            tmp_path,
+            local_mode=False,
+            local_repo_dir=None,
+            license_info=None,
+            license_acknowledged=False,
+        )
+
+        assert result is None
+        console.success.assert_called_once()
+        message = console.success.call_args.args[0]
+        assert "7" in message
+        assert "trial" in message.lower()
+
 
 class TestAgentPrerequisiteGate:
     """cmd_install must verify at least one supported AI agent is installed.

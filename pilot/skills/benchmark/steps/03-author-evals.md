@@ -27,7 +27,7 @@ Draft 3 realistic prompts with **falsifiable**, **discriminating** assertions. T
 }
 ```
 
-## ⛔ Path isolation — required
+## Path isolation — required
 
 Each run gets its own filesystem sandbox. Prompts must reference that sandbox, not a shared absolute path, or the `with` and `without` runs will read each other's outputs.
 
@@ -38,7 +38,7 @@ Two safe ways to specify where outputs go:
 | **Relative paths** (preferred) | `Save the result to slugify.py` | The subprocess cwd is already the per-run sandbox, so bare filenames land in the right place. Simpler, fewer tokens. |
 | **`{sandbox}` placeholder** | `Save to {sandbox}/slugify.py` | Use when the prompt genuinely needs an absolute path — the runner substitutes `{sandbox}` with the per-run directory before executing. |
 
-⛔ **Never write `/tmp/<fixed-name>/file.py` in a prompt.** The runner emits a warning and proceeds, but the benchmark is invalid — both configs write to the same path.
+**Never write `/tmp/<fixed-name>/file.py` in a prompt.** The runner emits a warning and proceeds, but the benchmark is invalid — both configs write to the same path.
 
 ## What makes an assertion good
 

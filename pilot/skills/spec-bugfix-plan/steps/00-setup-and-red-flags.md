@@ -2,7 +2,7 @@
 
 ### 0.1 Read Toggle Configuration
 
-**⛔ Run FIRST, before any other step.** Read all toggle env vars in a single Bash call:
+**Run first, before any other step.** Read all toggle env vars in a single Bash call:
 
 ```bash
 echo "QUESTIONS=$PILOT_PLAN_QUESTIONS_ENABLED APPROVAL=$PILOT_PLAN_APPROVAL_ENABLED MODEL_SWITCH=$PILOT_MODEL_SWITCH_ENABLED"

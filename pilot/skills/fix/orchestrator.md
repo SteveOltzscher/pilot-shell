@@ -49,12 +49,12 @@ Bugfix workflow with TDD. Investigate the bug, write the failing test, fix at th
 - **No approval mid-flow.** Single end-of-flow confirmation only when `PILOT_PLAN_APPROVAL_ENABLED` is enabled.
 - **Stopping is success, not failure.** Recognising "this is bigger than a quick fix" and bailing out is the right call. Wasting time in the quick lane on a multi-component bug is the failure.
 <!-- CC-ONLY -->
-- **ALWAYS use `AskUserQuestion` tool** for user questions — never list numbered questions in plain text
+- **Use the `AskUserQuestion` tool for user questions** — it renders a structured form; don't fall back to plain-text numbered questions
 <!-- /CC-ONLY -->
 <!-- CODEX-START
-- **ALWAYS use plain-text numbered options** for user questions — never refer to `AskUserQuestion` as a callable tool in Codex
+- **Use plain-text numbered options for user questions** — the `AskUserQuestion` tool isn't callable in Codex
 - **Browser tools for E2E verification:** Use playwright-cli or agent-browser (Claude Code Chrome and Chrome DevTools MCP are not available in Codex)
-- **Codex adversarial review (Step 6.2.a) is not available** — the optional Codex review in Step 6 only runs when Claude Code's companion broker is present
+- **The Codex plugin companion review is not available** — its broker is Claude-Code-only. The native `changes-review` custom agent still runs in Step 6.1 when the Changes Review toggle is enabled.
 CODEX-END -->
 
 ---

@@ -14,6 +14,7 @@ from _lib.util import (
     _get_max_context_tokens,
     get_session_cache_path,
     post_tool_use_context,
+    resolve_session_id,
 )
 
 THRESHOLD_AUTOCOMPACT = 90
@@ -21,8 +22,8 @@ _CODEX_TRANSCRIPT_TAIL_BYTES = 4_000_000
 
 
 def _get_pilot_session_id() -> str:
-    """Get Pilot session ID from environment."""
-    return os.environ.get("PILOT_SESSION_ID", "").strip() or "unknown"
+    """Get the resolved session ID (agent-native fallback chain)."""
+    return resolve_session_id()
 
 
 def get_session_flags(session_id: str) -> bool:
@@ -101,10 +102,7 @@ def _read_statusline_context_pct() -> float | None:
     Returns None if cache is missing, corrupt, or stale (>60s).
     Cache is already scoped per Pilot session via PILOT_SESSION_ID.
     """
-    pilot_session_id = os.environ.get("PILOT_SESSION_ID", "").strip()
-    if not pilot_session_id:
-        return None
-    cache_file = Path.home() / ".pilot" / "sessions" / pilot_session_id / "context-pct.json"
+    cache_file = Path.home() / ".pilot" / "sessions" / resolve_session_id() / "context-pct.json"
     if not cache_file.exists():
         return None
     try:

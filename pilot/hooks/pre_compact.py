@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from _lib.console_settings import get_console_url
 from _lib.util import (
     get_session_plan_path,
+    plan_in_current_project,
     read_hook_stdin,
 )
 
@@ -27,20 +28,38 @@ def _sessions_base() -> Path:
 
 
 def _capture_active_plan() -> dict | None:
-    """Capture active plan state from session data."""
+    """Capture active plan state from session data.
+
+    Cross-session bleed guard: skips a plan that belongs to ANOTHER project,
+    which leaks through the shared "default" active_plan.json when
+    PILOT_SESSION_ID is unset. Without this, compaction poisons this session's
+    per-session pre-compact-state.json with a foreign repo's /spec plan, which
+    post_compact_restore would then surface. Fails open for relative or
+    unresolvable paths so the legacy capture is never weakened.
+    """
     plan_path = get_session_plan_path()
     if not plan_path.exists():
         return None
 
     try:
         plan_data = json.loads(plan_path.read_text())
-        return {
-            "plan_path": plan_data.get("plan_path"),
-            "status": plan_data.get("status"),
-            "current_task": plan_data.get("current_task"),
-        }
     except (json.JSONDecodeError, OSError):
         return None
+
+    raw_path = plan_data.get("plan_path")
+    if isinstance(raw_path, str) and raw_path:
+        p = Path(raw_path)
+        if not p.is_absolute():
+            project_root = os.environ.get("CLAUDE_PROJECT_ROOT", str(Path.cwd()))
+            p = Path(project_root) / p
+        if not plan_in_current_project(p):
+            return None
+
+    return {
+        "plan_path": plan_data.get("plan_path"),
+        "status": plan_data.get("status"),
+        "current_task": plan_data.get("current_task"),
+    }
 
 
 def _capture_task_list() -> dict | None:

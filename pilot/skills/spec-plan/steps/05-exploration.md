@@ -1,6 +1,6 @@
 ## Step 5: Exploration
 
-**⛔ START FROM THE STEP 3 WORKSPACE SCAN — do NOT re-run `codegraph_context` with the same query.**
+**Start from the Step 3 Workspace Scan — don't re-run `codegraph_context` with the same query.**
 
 <!-- CODEX-START
 

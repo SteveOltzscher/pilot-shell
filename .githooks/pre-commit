@@ -52,6 +52,15 @@ if [ -n "$BENCHMARK_CHANGED" ]; then
   echo "[pre-commit] Benchmark unit tests passed."
 fi
 
+# --- 1d. Python lint gate (ruff + vulture + launcher⊥installer boundary) ---
+if [ -n "$LAUNCHER_CHANGED" ] || [ -n "$INSTALLER_CHANGED" ]; then
+  echo "[pre-commit] Python source changed — running lint gate (ruff + vulture + import-linter)..."
+  uv run ruff check launcher installer pilot/hooks
+  uv run vulture
+  uv run lint-imports
+  echo "[pre-commit] Lint gate passed."
+fi
+
 # --- 2. Console unit tests ---
 CONSOLE_CHANGED=$(git diff --cached --name-only -- 'console/src/' 'console/scripts/' 'console/package.json' 'console/tsconfig.json' 'console/vite.config.ts' | head -1)
 

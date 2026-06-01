@@ -197,8 +197,8 @@ claude                                                          codex
 | Tier | Behavior |
 |------|----------|
 | **Quick** | Skip research |
-| **Standard** | Web search for competitors, prior art, best practices |
-| **Deep** | Parallel research agents for comprehensive findings |
+| **Standard** | Light in-session web search for competitors, prior art, best practices |
+| **Deep** | Hands off to the dedicated **`deep-research`** skill — multi-angle search, source verification, and a cited report (Codex uses an in-session multi-angle pass) |
 
 The final PRD covers problem statement, core user flows, scope boundaries, and technical context — then offers to hand off directly to `/spec` for implementation.
 
@@ -259,6 +259,7 @@ For local bugs. Single file, obvious-once-traced root cause. No plan file, no ap
 - **Fix:** Minimal change at the root cause. Symptom patches are forbidden. Reproducing test must pass, then the targeted test module. Diff sanity check (root-cause file in diff, no unplanned files, < 20 lines, symptom-patching grep) catches issues with the fix itself.
 - **Verify End-to-End:** The primary correctness signal. Run the actual program with the original input (browser automation for UI — Claude Code uses its Chrome extension; Codex uses Chrome DevTools MCP; both fall back to playwright-cli / agent-browser. CLI / API / REPL / job trigger for non-UI) and capture concrete evidence. A passing unit test alone is never accepted as proof.
 - **Quality Gate:** Lint + types + build + full anti-regression suite, once.
+- **Review (when enabled):** Honours the same Console Settings as `/spec` — with **Changes Review** (on by default) or **Codex Companion Changes Review** enabled, those reviewers audit the fix at finalise and findings are auto-fixed before the approval gate.
 
 **When to use `/spec` for bugs instead:** bugs that span 3+ files, need a written plan and approval, warrant a Behavior Contract (`Given / When / Currently / Expected`), or have failed two fix attempts. `/spec` adds a revert-test proof in verify, a cap at 3 iterations, and a code review gate — use it when the complexity makes that structure worthwhile.
 

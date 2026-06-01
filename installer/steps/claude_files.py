@@ -252,6 +252,7 @@ class ClaudeFilesStep(BaseStep):
         self._cleanup_stale_managed_files(ctx)
         self._save_pilot_manifest(ctx)
         self._reapply_customization(ui)
+        self._sync_pilot_env_vars()
 
         self._report_results(ui, file_count, failed_files)
 
@@ -965,6 +966,30 @@ class ClaudeFilesStep(BaseStep):
                     f"⚠ Customization reapply FAILED: {e} — your custom workflow may be broken. "
                     f"Run `pilot customize status` after install."
                 )
+
+    def _sync_pilot_env_vars(self) -> None:
+        """Sync Pilot env vars into ~/.claude/settings.json post-install.
+
+        Subprocesses the freshly-installed binary (`pilot sync-env`) rather than
+        importing launcher logic across the package boundary. On root/container
+        hosts this writes IS_SANDBOX=1 so a directly-launched
+        `claude --dangerously-skip-permissions` clears Claude Code's root guard
+        (issue #154); on native hosts it just refreshes the PILOT_* toggles.
+        Non-fatal — a settings hiccup must never break the install.
+        """
+        pilot_bin = Path.home() / ".pilot" / "bin" / "pilot"
+        if not pilot_bin.is_file():
+            return
+
+        try:
+            subprocess.run(
+                [str(pilot_bin), "sync-env"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        except (subprocess.SubprocessError, OSError):
+            pass
 
     def _make_scripts_executable(self, scripts_dir: Path) -> None:
         """Make .cjs script files executable."""

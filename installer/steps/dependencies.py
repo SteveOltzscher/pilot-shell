@@ -354,7 +354,8 @@ def install_rtk() -> bool:
 
     Always runs the installer to ensure the manifest-pinned version is current.
     Symlinks to ~/.pilot/bin/ so RTK is on PATH during hook execution.
-    After install, runs ``rtk init`` for both Claude Code and Codex (if installed).
+    After install, heals an unusable binary (see ``_heal_broken_rtk``) and runs
+    ``rtk init`` for both Claude Code and Codex (if installed).
     """
     was_present = command_exists("rtk")
     if not _curl_pipe_from_manifest(
@@ -363,13 +364,84 @@ def install_rtk() -> bool:
     ):
         if was_present:
             _symlink_to_pilot_bin("rtk")
+            _heal_broken_rtk()
             _record_outcome(_OUTCOME_UNCHANGED)
             return True
         return False
     _symlink_to_pilot_bin("rtk")
+    _heal_broken_rtk()
     _init_rtk()
     _record_outcome(_OUTCOME_UPDATED if was_present else _OUTCOME_INSTALLED)
     return True
+
+
+def _rtk_executes(rtk_path: str | Path) -> bool:
+    """Whether the rtk binary at `rtk_path` actually loads and runs.
+
+    A ``--version`` call exiting non-zero (e.g. the arm64 release binary failing
+    with a ``GLIBC_2.39 not found`` loader error on an older-glibc base) means
+    the binary is present but unusable — it must not be left shadowing a working
+    rtk on PATH.
+    """
+    try:
+        result = subprocess.run(
+            [str(rtk_path), "--version"],
+            capture_output=True,
+            timeout=10,
+            stdin=subprocess.DEVNULL,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
+
+
+def _heal_broken_rtk() -> None:
+    """Recover when the curl-pipe installer drops an unusable rtk that shadows a
+    working build on PATH.
+
+    Issue #155: on arm64 the rtk-ai ``install.sh`` installs a glibc-2.39 binary
+    at ~/.local/bin/rtk; on a glibc-2.36 base (Debian 12) it cannot load, and
+    because ~/.local/bin precedes ~/.pilot/bin and the Homebrew prefix on PATH it
+    shadows the working brew rtk. If the rtk that wins on PATH does not execute,
+    relink it — and ~/.pilot/bin/rtk — to the first rtk on PATH that does run.
+    No-op when the resolved rtk already works.
+    """
+    resolved = shutil.which("rtk")
+    if not resolved or _rtk_executes(resolved):
+        return
+
+    working: str | None = None
+    seen: set[Path] = set()
+    for entry in os.environ.get("PATH", "").split(os.pathsep):
+        if not entry:
+            continue
+        candidate = Path(entry) / "rtk"
+        try:
+            if not candidate.exists():
+                continue
+            real = candidate.resolve()
+        except OSError:
+            continue
+        if real in seen:
+            continue
+        seen.add(real)
+        if _rtk_executes(candidate):
+            working = str(candidate)
+            break
+    if not working:
+        return
+
+    target = Path(working).resolve()
+    for link in (Path(resolved), Path.home() / ".pilot" / "bin" / "rtk"):
+        try:
+            if link.resolve() == target:
+                continue
+            link.parent.mkdir(parents=True, exist_ok=True)
+            if link.is_symlink() or link.exists():
+                link.unlink()
+            link.symlink_to(target)
+        except OSError:
+            pass
 
 
 def _init_rtk() -> None:

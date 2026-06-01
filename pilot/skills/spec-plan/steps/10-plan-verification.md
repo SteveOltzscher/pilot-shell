@@ -2,7 +2,7 @@
 
 ### 10.0: No-Placeholders Self-Check (always — before launching reviewers)
 
-⛔ Walk the plan file once, fresh-eyed, and grep for the patterns below. **Every match is a plan failure** — fix inline before sending the plan to a reviewer or asking for approval.
+Walk the plan file once, fresh-eyed, and grep for the patterns below. **Every match is a plan failure** — fix inline before sending the plan to a reviewer or asking for approval.
 
 **Forbidden placeholder patterns:**
 
@@ -25,9 +25,9 @@ If anything matches, fix it inline (no new round-trip needed). Then proceed to s
 ---
 
 <!-- CC-ONLY -->
-**⛔ If `PILOT_SPEC_REVIEW_ENABLED` is `"false"` (from Step 0),** skip the Claude reviewer launch below and proceed straight to the Codex section.
+**If `PILOT_SPEC_REVIEW_ENABLED` is `"false"` (from Step 0),** skip the Claude reviewer launch below and proceed straight to the Codex section.
 
-**⛔ Auto-skip the Claude reviewer for small plans.** If the plan has **task count ≤ 2** AND it does NOT touch security, authentication, data integrity, or destructive operations, skip the Claude reviewer launch — reviewer overhead exceeds value for a change the implementer can audit by inspection. Continue to the Codex section below; Codex still runs **only** when the user has explicitly opted in via `PILOT_CODEX_SPEC_REVIEW_ENABLED`.
+**Auto-skip the Claude reviewer for small plans.** If the plan has **task count ≤ 2** AND it does NOT touch security, authentication, data integrity, or destructive operations, skip the Claude reviewer launch — reviewer overhead exceeds value for a change the implementer can audit by inspection. Continue to the Codex section below; Codex still runs **only** when the user has explicitly opted in via `PILOT_CODEX_SPEC_REVIEW_ENABLED`.
 
 For 3+ task plans, OR any plan touching sensitive surfaces regardless of task count, run the Claude reviewer below in full.
 
@@ -41,7 +41,7 @@ SESS_ID=$(echo $PILOT_SESSION_ID)
 
 Output path: `~/.pilot/sessions/<SESS_ID>/findings-spec-review-<plan-slug>.json`
 
-**⛔ Delete stale findings before launching** (previous run of the same plan may have left a file):
+**Delete stale findings before launching** (previous run of the same plan may have left a file):
 
 ```bash
 rm -f "$OUTPUT_PATH"
@@ -72,7 +72,7 @@ Task(
 
 Launch Codex review NOW — it runs in parallel with the Claude reviewer above.
 
-**⛔ Codex-once rule.** Codex runs at most once per `/spec` invocation. Before launching, check the sentinel file. If it exists, the review already ran in this session — skip the launch and the collection sub-step below. Plan iterations (annotation feedback, plan edits, fixing prior findings) do NOT trigger another Codex run.
+**Codex-once rule.** Codex runs at most once per `/spec` invocation. Before launching, check the sentinel file. If it exists, the review already ran in this session — skip the launch and the collection sub-step below. Plan iterations (annotation feedback, plan edits, fixing prior findings) do NOT trigger another Codex run.
 
 ```bash
 SESS_ID="${PILOT_SESSION_ID:-default}"
@@ -119,7 +119,7 @@ pathlib.Path(os.environ["PROMPT_FILE"]).write_text(text)
 '
 ```
 
-3. Launch the task in background. **⛔ For `task`, the companion's `--background` flag IS supported (unlike `review`/`adversarial-review` where only Claude Code's `Bash(run_in_background=true)` detaches).** Use the companion's own background mode here — the launch command returns the job ID immediately on stdout. Capture the job ID for collection.
+3. Launch the task in background. **For `task`, the companion's `--background` flag IS supported** (unlike `review`/`adversarial-review`, where only Claude Code's `Bash(run_in_background=true)` detaches). Use the companion's own background mode here — the launch command returns the job ID immediately on stdout. Capture the job ID for collection.
 
    ```
    Bash(
@@ -153,13 +153,13 @@ for i in $(seq 1 150); do [ -f "$OUTPUT_PATH" ] && echo "READY" && break; sleep 
 
 Then Read the file once. If not READY after 5 min, re-launch synchronously.
 
-**⛔ Validate findings:** After reading the JSON, verify that the `plan_file` field matches the current plan path. If it doesn't match, the findings are stale from a previous `/spec` — delete the file, re-launch the reviewer, and wait again.
+**Validate findings:** After reading the JSON, verify that the `plan_file` field matches the current plan path. If it doesn't match, the findings are stale from a previous `/spec` — delete the file, re-launch the reviewer, and wait again.
 
 **Fix Claude reviewer findings immediately** — must_fix → should_fix. Suggestions if reasonable.
 
 #### Collect Codex Results (if launched)
 
-**⛔ MANDATORY — NEVER skip or defer the Codex review.** If Codex was launched above, you MUST collect and act on its results before proceeding. The Codex review runs as `Bash(run_in_background=true)` — you will be automatically notified when it completes.
+**⛔ Never skip or defer the Codex review.** If Codex was launched above, collect and act on its results before proceeding. The Codex review runs as `Bash(run_in_background=true)` — you will be automatically notified when it completes.
 
 **⛔ The completion notification is the ONLY valid signal.** Do NOT read the output file to check if the review is done. The file may contain partial output from an in-progress review — reading it before the notification arrives leads to false conclusions ("no findings" when the review is still running). This is the #1 cause of premature Codex skip.
 
@@ -225,7 +225,7 @@ rm -f "$PROMPT_FILE"
 **If Codex was NOT launched**, proceed after all Claude reviewer must_fix/should_fix resolved.
 <!-- /CC-ONLY -->
 <!-- CODEX-START
-**⛔ If `PILOT_SPEC_REVIEW_ENABLED` is `"false"` (from Step 0),** skip native Codex plan review and proceed to the task-card format check below.
+**If `PILOT_SPEC_REVIEW_ENABLED` is `"false"` (from Step 0),** skip native Codex plan review and proceed to the task-card format check below.
 
 **When enabled:** launch the managed Codex custom agent and wait for its final JSON response before requesting approval.
 

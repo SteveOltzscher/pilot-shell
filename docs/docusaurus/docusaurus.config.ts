@@ -17,12 +17,12 @@ const config: Config = {
   organizationName: "maxritter",
   projectName: "pilot-shell",
 
-  onBrokenLinks: "warn",
+  onBrokenLinks: "throw",
 
   markdown: {
     format: "md",
     hooks: {
-      onBrokenMarkdownLinks: "warn",
+      onBrokenMarkdownLinks: "throw",
     },
   },
 

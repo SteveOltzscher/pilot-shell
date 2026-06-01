@@ -2,7 +2,7 @@
 
 **Why this step exists.** Batch 1 clarifying questions (Step 4) are generated *before* exploration. Without code context, options collapse to generic shapes ("extend existing" vs "new module") instead of grounded ones ("Extend `LicenseAuth` in `launcher/auth.py:42`"). A single ~2-second scan up front fixes that — and the same scan is reused in Step 5 so we never pay for `codegraph_context` twice.
 
-**⛔ Always runs**, regardless of `PILOT_PLAN_QUESTIONS_ENABLED`. Autonomous mode benefits *more* from grounded defaults, not less — when there is no user to disambiguate, the codebase has to.
+**Always runs**, regardless of `PILOT_PLAN_QUESTIONS_ENABLED`. Autonomous mode benefits *more* from grounded defaults, not less — when there is no user to disambiguate, the codebase has to.
 
 <!-- CODEX-START
 

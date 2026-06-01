@@ -20,14 +20,13 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _lib.util import _sessions_base, get_session_plan_path
+from _lib.util import _sessions_base, get_session_plan_path, plan_in_current_project, resolve_session_id
 
 HANDOFF_SENTINEL_MAX_AGE_SECONDS = 3600
 
 
 def get_handoff_sentinel_path() -> Path:
-    session_id = os.environ.get("PILOT_SESSION_ID", "").strip() or "default"
-    return _sessions_base() / session_id / "spec-handoff-pending"
+    return _sessions_base() / resolve_session_id() / "spec-handoff-pending"
 
 
 def _resolve_plan_path() -> str | None:
@@ -47,7 +46,15 @@ def _resolve_plan_path() -> str | None:
     if not p.is_absolute():
         project_root = os.environ.get("CLAUDE_PROJECT_ROOT", str(Path.cwd()))
         p = Path(project_root) / p
-    return str(p) if p.exists() else None
+    if not p.exists():
+        return None
+    # Cross-session bleed guard: never auto-resume a plan that belongs to ANOTHER
+    # project. When PILOT_SESSION_ID is unset the active_plan.json collapses to the
+    # shared "default" file, so a /spec plan registered by another repo's session
+    # could otherwise force this session to invoke spec-implement on foreign work.
+    if not plan_in_current_project(p):
+        return None
+    return str(p)
 
 
 def main() -> int:

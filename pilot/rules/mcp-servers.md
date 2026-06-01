@@ -27,7 +27,7 @@ CODEX-END -->
 ### CodeGraph — Code Knowledge Graph (PRIMARY)
 
 <!-- CC-ONLY -->
-**Structural code search.** First action on any task. Replaces Grep/Glob for symbol/call/impact queries. Complements Semble (intent search — see `cli-tools.md`).
+**Structural code search.** The fastest way to orient on a code task — replaces Grep/Glob for symbol/call/impact queries. Complements Semble (intent search — see `cli-tools.md`).
 <!-- /CC-ONLY -->
 <!-- CODEX-START
 **Structural code search.** Use for runtime-code structure: unknown entry points, symbol relationships, callers/callees, and blast radius. In Codex, do not spend a graph call on docs, rules, markdown, config, UI copy, reviews of a known diff, or named-file tasks unless a runtime symbol relationship is genuinely unknown. Complements Semble (intent search — see `cli-tools.md`).
@@ -147,7 +147,7 @@ Useful options: `waitUntil` (`load`/`domcontentloaded`/`networkidle`), `returnHt
 <!-- CC-ONLY -->
 | Need | Tool |
 |------|------|
-| Task orientation (FIRST on every task) | `codegraph_context` |
+| Task orientation (entry points + related symbols) | `codegraph_context` |
 | Symbol search by name | `codegraph_search` |
 | Call tracing / impact analysis | CodeGraph (`callers` / `callees` / `impact`) |
 | Deep code understanding (known symbols) | `codegraph_explore` |

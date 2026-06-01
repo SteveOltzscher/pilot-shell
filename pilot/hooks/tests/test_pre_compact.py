@@ -148,6 +148,53 @@ class TestPreCompactHook:
         assert mock_urlopen.called
 
 
+class TestCaptureActivePlan:
+    """Test _capture_active_plan project-scoping guard."""
+
+    @patch("pre_compact.get_session_plan_path")
+    def test_does_not_capture_foreign_project_plan(self, mock_plan_path, tmp_path):
+        """Cross-session bleed (source): a foreign-project plan reached through the
+        shared 'default' active_plan.json must not be captured into this session's
+        pre-compact state. Without the guard, compaction poisons the per-session
+        fallback file with another repo's plan."""
+        from pre_compact import _capture_active_plan
+
+        current_project = tmp_path / "current-project"
+        current_project.mkdir()
+        foreign_plan = tmp_path / "other-project" / "docs" / "plans" / "2026-05-31-foreign.md"
+        foreign_plan.parent.mkdir(parents=True)
+        foreign_plan.write_text("# Foreign\n")
+
+        plan_json = tmp_path / "active_plan.json"
+        plan_json.write_text(json.dumps({"status": "PENDING", "plan_path": str(foreign_plan)}))
+        mock_plan_path.return_value = plan_json
+
+        with patch.dict(os.environ, {"CLAUDE_PROJECT_ROOT": str(current_project)}, clear=True):
+            result = _capture_active_plan()
+
+        assert result is None, "Foreign-project plan must not be captured into pre-compact state"
+
+    @patch("pre_compact.get_session_plan_path")
+    def test_captures_plan_in_current_project(self, mock_plan_path, tmp_path):
+        """A plan that lives in the current project is still captured."""
+        from pre_compact import _capture_active_plan
+
+        current_project = tmp_path / "current-project"
+        own_plan = current_project / "docs" / "plans" / "2026-05-31-own.md"
+        own_plan.parent.mkdir(parents=True)
+        own_plan.write_text("# Own\n")
+
+        plan_json = tmp_path / "active_plan.json"
+        plan_json.write_text(json.dumps({"status": "PENDING", "plan_path": str(own_plan)}))
+        mock_plan_path.return_value = plan_json
+
+        with patch.dict(os.environ, {"CLAUDE_PROJECT_ROOT": str(current_project)}, clear=True):
+            result = _capture_active_plan()
+
+        assert result is not None
+        assert result["plan_path"] == str(own_plan)
+
+
 class TestCaptureTaskList:
     """Test _capture_task_list function."""
 

@@ -96,7 +96,7 @@ class TestResumeHook:
         sentinel = _test_session_dir() / "spec-handoff-pending"
         sentinel.touch()
 
-        exit_code, stdout, _ = _run()
+        exit_code, stdout, _ = _run(project_root=tmp_path)
 
         assert exit_code == 0
         ctx = _additional_context(stdout)
@@ -135,6 +135,29 @@ class TestResumeHook:
         assert exit_code == 0
         assert _additional_context(stdout) is None
         assert not sentinel.exists()
+
+    def test_ignores_plan_outside_current_project(self, tmp_path: Path) -> None:
+        """Cross-session bleed: a fresh sentinel plus an active_plan.json pointing
+        at a plan in ANOTHER project must NOT trigger a spec-implement resume.
+        Reproduces the unset-PILOT_SESSION_ID 'default' collapse where repo B's
+        plan leaks into repo A's session and would auto-resume foreign work."""
+        project = tmp_path / "current-project"
+        project.mkdir()
+
+        other_plans = tmp_path / "other-project" / "docs" / "plans"
+        other_plans.mkdir(parents=True)
+        foreign_plan = other_plans / "2026-05-22-foreign.md"
+        foreign_plan.write_text("# Foreign\n\nStatus: PENDING\nApproved: Yes\n")
+        _write_active_plan(foreign_plan)
+
+        sentinel = _test_session_dir() / "spec-handoff-pending"
+        sentinel.touch()
+
+        exit_code, stdout, _ = _run(project_root=project)
+
+        assert exit_code == 0
+        assert _additional_context(stdout) is None, "Foreign-project plan must not trigger a resume"
+        assert not sentinel.exists(), "Sentinel is still consumed (unlinked) even when the plan is suppressed"
 
     def test_relative_plan_path_is_resolved_against_project_root(self, tmp_path: Path) -> None:
         plans_dir = tmp_path / "docs" / "plans"

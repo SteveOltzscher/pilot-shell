@@ -2,7 +2,7 @@
 
 **Purpose:** When the input is vague ("I want better onboarding", "something for team updates"), riff with the user before locking into structured questions. This is the divergent phase — generate, react, refine.
 
-**⛔ Skip this step entirely when:**
+**Skip this step entirely when:**
 - The user's input already names a concrete thing to build ("Add OAuth login with Google", "Migrate the worker from cron to BullMQ")
 - Step 1 found existing code that clearly answers what's being built
 - Research (Step 2) already produced a chosen direction

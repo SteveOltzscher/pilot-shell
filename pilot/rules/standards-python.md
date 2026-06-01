@@ -9,7 +9,7 @@ paths:
 
 ### Package Management - UV ONLY
 
-**MANDATORY: Use `uv` for ALL Python operations. NEVER use `pip` directly.**
+**Use `uv` for all Python operations, not `pip` directly** — `pip` bypasses uv's environment and lockfile management, desyncing the project.
 
 ```bash
 uv pip install package-name

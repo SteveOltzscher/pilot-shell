@@ -80,7 +80,7 @@ Do NOT list "supporting artifacts" — they duplicate the per-task `Files:` bloc
 
 #### Step 7.3: Completeness Probe
 
-**⛔ Skip this step when task count ≤ 2** AND the plan does NOT touch security, authentication, data integrity, or destructive operations — the probe's ~2-min cost exceeds its value for 1–2 task changes whose error paths the implementer can audit by inspection. For 3+ task plans, OR any plan touching sensitive surfaces regardless of size, run the probe in full.
+**Skip this step when task count ≤ 2** AND the plan does NOT touch security, authentication, data integrity, or destructive operations — the probe's ~2-min cost exceeds its value for 1–2 task changes whose error paths the implementer can audit by inspection. For 3+ task plans, OR any plan touching sensitive surfaces regardless of size, run the probe in full.
 
 Before locking the truth list, work backward from the success state to find missing observable behaviors. For the chosen approach, walk these four prompts once:
 

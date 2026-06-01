@@ -65,8 +65,8 @@ Choose a research tier at the start:
 | Tier | What It Does | Best For |
 |------|-------------|----------|
 | **Quick** | Skip research, go straight to brainstorming | Simple ideas, well-understood domains |
-| **Standard** | Web search for competitors, prior art, best practices (5-10 queries) | Most features — quick context gathering |
-| **Deep** | Parallel research agents covering multiple angles simultaneously | Complex domains, market research, technical exploration |
+| **Standard** | Light in-session web search for competitors, prior art, best practices (5-10 queries) | Most features — quick context gathering |
+| **Deep** | On Claude Code, hands off to the dedicated **`deep-research`** skill — multi-angle search, source verification, and a cited report; on Codex, an in-session multi-angle pass | Complex domains, market research, technical exploration |
 
 Research findings are embedded in the PRD under a dedicated section.
 

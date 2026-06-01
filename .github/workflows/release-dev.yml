@@ -52,6 +52,8 @@ jobs:
     name: Security Scan (Trivy)
     permissions:
       contents: read
+      # Best-effort SARIF upload to the code-scanning / Security tab.
+      security-events: write
     runs-on: ubuntu-latest
     needs: supply-chain-gate
     steps:
@@ -79,22 +81,29 @@ jobs:
           ignore-unfixed: true
           skip-dirs: ".venv,node_modules,console/node_modules,launcher,docs/site/api,console,docs/site/node_modules,docs/docusaurus/node_modules"
           trivyignores: ".trivyignore"
-          format: "table"
-          output: trivy-results.txt
+          format: "sarif"
+          output: trivy-results.sarif
 
-      - name: Publish Trivy results to step summary
+      # if: always() — Trivy keeps exit-code 1, so without it the SARIF would
+      # vanish exactly when a vulnerability is found (Codex medium #4).
+      - name: Upload Trivy SARIF artifact
         if: always()
-        run: |
-          if [[ -s trivy-results.txt ]]; then
-            {
-              echo "### Security Scan Results"
-              echo '```'
-              cat trivy-results.txt
-              echo '```'
-            } >> $GITHUB_STEP_SUMMARY
-          else
-            echo "### Security Scan: No issues found" >> $GITHUB_STEP_SUMMARY
-          fi
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: trivy-sarif
+          path: trivy-results.sarif
+          retention-days: 7
+
+      - name: Upload Trivy SARIF to code-scanning (best-effort)
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4
+        with:
+          sarif_file: trivy-results.sarif
+
+      - name: Security scan summary note
+        if: always()
+        run: echo "### Security Scan — Trivy SARIF uploaded as the 'trivy-sarif' artifact (and the Security tab when code-scanning is enabled)." >> "$GITHUB_STEP_SUMMARY"
 
   # All jobs run in parallel for maximum speed
   python-tests:
@@ -125,13 +134,23 @@ jobs:
       - name: Install Python dependencies
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install . pytest pytest-cov pytest-asyncio
+          python3 -m pip install . pytest pytest-cov pytest-asyncio hypothesis
 
       - name: Run unit tests with coverage
         run: |
-          python3 -m pytest installer/tests/unit/ launcher/tests/unit/ pilot/skills/benchmark/tests/ -v \
-            --cov=installer --cov=launcher \
-            --cov-report=term --cov-report=xml
+          python3 -m pytest installer/tests/unit/ launcher/tests/unit/ pilot/hooks/tests/ pilot/skills/benchmark/tests/ -v \
+            --cov=installer --cov=launcher --cov=pilot/hooks \
+            --cov-report=term --cov-report=xml --junitxml=junit.xml
+
+      - name: Upload test + coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: python-test-results
+          path: |
+            junit.xml
+            coverage.xml
+          retention-days: 7
 
   console-tests:
     name: Console Unit Tests
@@ -211,6 +230,45 @@ jobs:
       - name: Build viewer
         working-directory: console
         run: bun run build:viewer
+
+  lint:
+    name: Lint (ruff + vulture + import boundary)
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    needs: supply-chain-gate
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Install git-crypt
+        run: sudo apt-get update && sudo apt-get install -y git-crypt
+
+      - name: Unlock repository
+        env:
+          GIT_CRYPT_KEY: ${{ secrets.GIT_CRYPT_KEY }}
+        run: bash .github/workflows/scripts/setup-git-crypt.sh
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+        with:
+          python-version: "3.12"
+
+      - name: Install lint dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install . ruff vulture import-linter
+
+      - name: Ruff
+        run: ruff check launcher installer pilot/hooks
+
+      - name: Vulture (dead code)
+        run: vulture
+
+      - name: Import boundary (launcher must not import installer, and vice-versa)
+        run: lint-imports
 
   build-pilot-arm64:
     name: Build Pilot Linux arm64
@@ -321,6 +379,7 @@ jobs:
       - python-tests
       - console-tests
       - console-build
+      - lint
       - build-pilot-arm64
       - build-pilot-darwin-arm64
     steps:
@@ -372,6 +431,9 @@ jobs:
       - name: Create pre-release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Pass through an env var instead of interpolating directly in the
+          # script — github.head_ref is attacker-controllable (script injection).
+          HEAD_REF: ${{ github.head_ref }}
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
           PR_NUM="${{ github.event.pull_request.number }}"
@@ -380,7 +442,7 @@ jobs:
             NOTES="Pre-release build from PR #${PR_NUM}
 
           **Commit:** ${{ steps.version.outputs.COMMIT_SHA }}
-          **Branch:** ${{ github.head_ref }}
+          **Branch:** ${HEAD_REF}
 
           This is a development pre-release for testing. Not for production use."
           else

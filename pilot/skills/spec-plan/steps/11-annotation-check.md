@@ -1,6 +1,6 @@
 ## Step 11: Check for Console Annotation Feedback (Before Approval)
 
-**⛔ Run this BEFORE Step 12 (approval).** Check if the user has annotated the plan in the Console's Specifications tab. Annotations auto-save to the unified JSON file — no "Send Feedback" button needed.
+**Run this before Step 12 (approval).** Check if the user has annotated the plan in the Console's Specifications tab. Annotations auto-save to the unified JSON file — no "Send Feedback" button needed.
 
 1. Derive the annotation file path from the plan path:
    - Plan: `docs/plans/2026-03-26-my-feature.md` → Annotations: `docs/plans/.annotations/2026-03-26-my-feature.json`

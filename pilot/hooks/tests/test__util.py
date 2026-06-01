@@ -18,6 +18,7 @@ from _lib.util import (
     RED,
     YELLOW,
     _sessions_base,
+    current_project_root,
     find_git_root,
     get_edited_file_from_stdin,
     get_session_cache_path,
@@ -221,6 +222,38 @@ class TestSessionsBase:
         assert base == Path.home() / ".pilot" / "sessions"
 
 
+class TestResolveSessionId:
+    """Tests for resolve_session_id() — agent-native fallback chain (the #157 root)."""
+
+    def test_prefers_pilot_session_id(self):
+        from _lib.util import resolve_session_id
+
+        with patch.dict(
+            "os.environ",
+            {"PILOT_SESSION_ID": "wrap-1", "CLAUDE_CODE_SESSION_ID": "claude-2", "CODEX_THREAD_ID": "codex-3"},
+            clear=True,
+        ):
+            assert resolve_session_id() == "wrap-1"
+
+    def test_falls_back_to_claude_code_session_id(self):
+        from _lib.util import resolve_session_id
+
+        with patch.dict("os.environ", {"CLAUDE_CODE_SESSION_ID": "claude-2", "CODEX_THREAD_ID": "codex-3"}, clear=True):
+            assert resolve_session_id() == "claude-2"
+
+    def test_falls_back_to_codex_thread_id(self):
+        from _lib.util import resolve_session_id
+
+        with patch.dict("os.environ", {"CODEX_THREAD_ID": "codex-3"}, clear=True):
+            assert resolve_session_id() == "codex-3"
+
+    def test_defaults_when_all_unset(self):
+        from _lib.util import resolve_session_id
+
+        with patch.dict("os.environ", {}, clear=True):
+            assert resolve_session_id() == "default"
+
+
 class TestGetSessionCachePath:
     """Tests for get_session_cache_path()."""
 
@@ -230,6 +263,14 @@ class TestGetSessionCachePath:
         assert isinstance(path, Path)
         assert "test-session-123" in str(path)
         assert path.name == "context-cache.json"
+
+    @patch.dict("os.environ", {"CLAUDE_CODE_SESSION_ID": "claude-cache-1"}, clear=True)
+    def test_falls_back_to_claude_session_id(self):
+        """Reader path must key on the same agent-native id the writer uses, so an
+        IDE/desktop session (no PILOT_SESSION_ID) is isolated rather than sharing 'default'."""
+        path = get_session_cache_path()
+        assert "claude-cache-1" in str(path)
+        assert "default" not in str(path)
 
     @patch.dict("os.environ", {}, clear=True)
     def test_defaults_to_default(self):
@@ -247,6 +288,14 @@ class TestGetSessionPlanPath:
         assert isinstance(path, Path)
         assert "test-session-456" in str(path)
         assert path.name == "active_plan.json"
+
+    @patch.dict("os.environ", {"CLAUDE_CODE_SESSION_ID": "claude-plan-1"}, clear=True)
+    def test_falls_back_to_claude_session_id(self):
+        """active_plan.json must key on the agent-native id (matching the launcher
+        register_plan writer) so a foreign session's plan never lands in 'default'."""
+        path = get_session_plan_path()
+        assert "claude-plan-1" in str(path)
+        assert "default" not in str(path)
 
 
 class TestFindGitRoot:
@@ -268,6 +317,41 @@ class TestFindGitRoot:
     def test_handles_exception(self, mock_run):
         result = find_git_root()
         assert result is None
+
+
+class TestCurrentProjectRoot:
+    """Tests for current_project_root() authoritative-source resolution."""
+
+    @patch("subprocess.run")
+    def test_returns_claude_project_root_env(self, mock_run):
+        with patch.dict("os.environ", {"CLAUDE_PROJECT_ROOT": "/work/proj"}, clear=True):
+            assert current_project_root() == Path("/work/proj")
+        mock_run.assert_not_called()
+
+    @patch("_lib.util.find_git_root", return_value=Path("/work/repo"))
+    def test_returns_git_toplevel_when_env_unset(self, _mock_git):
+        with patch.dict("os.environ", {}, clear=True):
+            assert current_project_root() == Path("/work/repo")
+
+    @patch("_lib.util.find_git_root", return_value=None)
+    def test_returns_none_when_no_authoritative_source(self, _mock_git):
+        """Degraded env (no CLAUDE_PROJECT_ROOT, git unavailable): must NOT fall back
+        to cwd. cwd is not an authoritative containment boundary — a hook run from a
+        subdirectory would wrongly reject a legitimate same-project plan. Returning
+        None makes plan_in_current_project fail open instead."""
+        with patch.dict("os.environ", {}, clear=True):
+            assert current_project_root() is None
+
+    @patch("_lib.util.find_git_root", return_value=None)
+    def test_guard_fails_open_under_degraded_root(self, _mock_git):
+        """The reported regression: with no authoritative root, an absolute plan under
+        the real project root (but outside the hook's cwd subdirectory) must NOT be
+        suppressed — plan_in_current_project fails open."""
+        from _lib.util import plan_in_current_project
+
+        plan_under_real_root = Path("/work/proj/docs/plans/2026-05-31-own.md")
+        with patch.dict("os.environ", {}, clear=True):
+            assert plan_in_current_project(plan_under_real_root) is True
 
 
 class TestReadHookStdin:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import tempfile
 import time
@@ -552,6 +553,44 @@ class TestInstallRtk:
             result = install_rtk()
 
         assert result is False
+
+    def test_install_rtk_relinks_broken_shadowing_binary(self, tmp_path: Path):
+        """Regression #155: a glibc-incompatible rtk dropped by the curl installer
+        at ~/.local/bin/rtk must not shadow a working build (e.g. Homebrew) on
+        PATH — install_rtk relinks both it and ~/.pilot/bin/rtk to the working one.
+        """
+        from installer.steps import dependencies
+
+        local_bin = tmp_path / ".local" / "bin"
+        brew_bin = tmp_path / "brew" / "bin"
+        local_bin.mkdir(parents=True)
+        brew_bin.mkdir(parents=True)
+        (tmp_path / ".pilot" / "bin").mkdir(parents=True)
+
+        working = brew_bin / "rtk"
+        working.write_text("#!/bin/sh\necho 'rtk 0.42.0'\n")
+        working.chmod(0o755)
+
+        # Simulates the GLIBC_2.39 loader failure: present but exits non-zero.
+        broken = local_bin / "rtk"
+        broken.write_text('#!/bin/sh\necho "GLIBC_2.39 not found" >&2\nexit 1\n')
+        broken.chmod(0o755)
+
+        with (
+            patch.dict(os.environ, {"PATH": f"{local_bin}{os.pathsep}{brew_bin}"}),
+            patch("installer.steps.dependencies.Path.home", return_value=tmp_path),
+            patch("installer.steps.dependencies._curl_pipe_from_manifest", return_value=True),
+            patch("installer.steps.dependencies._init_rtk"),
+            patch("installer.steps.dependencies.command_exists", return_value=False),
+        ):
+            result = dependencies.install_rtk()
+
+        assert result is True
+        # The shadowing binary now resolves to the working build instead of itself.
+        assert broken.is_symlink()
+        assert broken.resolve() == working.resolve()
+        # pilot's own symlink also points at the working build.
+        assert (tmp_path / ".pilot" / "bin" / "rtk").resolve() == working.resolve()
 
 
 class TestInitRtk:

@@ -8,7 +8,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
 import pytest
-
 from codegraph_init import (
     _enable_embeddings,
     _find_codegraph_package_dir,

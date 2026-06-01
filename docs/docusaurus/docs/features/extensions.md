@@ -70,20 +70,19 @@ Custom Codex agents are TOML files defining specialized subagents with model sel
 
 ### Limitations
 
-- **Remote push/pull** currently targets Claude Code extensions only
 - **Commands** are a Claude Code-only concept; they do not exist in Codex
 
 ## Team Sharing (Team and Enterprise)
 
-:::note Claude Code extensions only
-Team sharing (push/pull/diff) currently targets Claude Code extensions in `~/.claude/`. Codex extensions are not yet synced through team remotes — share them via the `customization` feature or commit `.codex/` rules and agents directly with your project.
+:::note Agent-native formats
+Team sharing supports both Claude Code and Codex extensions. Claude Code files keep their existing repository paths, while Codex-native files are stored under `codex/` so Starlark rules, TOML agents, and `SKILL.md` skills do not collide with Claude Code Markdown files.
 :::
 
 Share extensions with your team through a connected git repository. Available on the Team and Enterprise plans.
 
 ### How It Works
 
-Team sharing uses `~/.claude/` as a git repository with a scoped `.gitignore` that tracks **only** the four extension directories (skills, rules, commands, agents). Everything else in `~/.claude/` is ignored by git.
+Team sharing uses `~/.claude/` as a git repository with a scoped `.gitignore` that tracks **only** extension directories. Claude Code extensions live at the repository root (`skills/`, `rules/`, `commands/`, `agents/`); Codex extensions live under `codex/skills/`, `codex/rules/`, and `codex/agents/`. Everything else in `~/.claude/` is ignored by git.
 
 ### Connecting a Remote
 
@@ -109,7 +108,7 @@ After connecting, a **Remote** scope filter button appears in the filter bar. Se
 
 Pilot Shell supports pushing extensions in [APM (Agent Package Manager)](https://microsoft.github.io/apm/introduction/key-concepts/) format, making your team remote directly installable by anyone using `apm install owner/repo` — regardless of whether they use Copilot, Claude, Cursor, or other AI coding tools.
 
-When **APM format** is enabled, extensions are converted on push:
+When **APM format** is enabled, Claude Code extensions are converted on push. Codex extensions stay in their Codex-native `codex/` paths and formats.
 
 | Pilot Shell (local)             | APM (remote)                                |
 | ------------------------------- | ------------------------------------------- |
@@ -133,7 +132,7 @@ Learn more about APM: [Getting Started](https://microsoft.github.io/apm/getting-
 
 ### Subfolder Support
 
-Some teams organize their extensions repository with subfolder paths (e.g., `plugins/myteam/rules/`, `plugins/myteam/skills/`). When you specify a subfolder during connection, all browse/push/pull operations automatically translate between the subfolder-prefixed remote paths and your local `~/.claude/` paths.
+Some teams organize their extensions repository with subfolder paths (e.g., `plugins/myteam/rules/`, `plugins/myteam/skills/`, `plugins/myteam/codex/rules/`). When you specify a subfolder during connection, all browse/push/pull operations automatically translate between the subfolder-prefixed remote paths and the correct local Claude Code or Codex paths.
 
 ## Console Extensions Page
 

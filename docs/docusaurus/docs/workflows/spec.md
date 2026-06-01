@@ -94,7 +94,7 @@ When all three are disabled, `/spec` runs end-to-end without any user interactio
 | **Spec Review** | On      | Validates the plan before implementation — checks alignment and flags risky assumptions       |
 | **Changes Review** | On   | Reviews code after implementation — compliance, security, test coverage, and goal achievement |
 
-Both reviewers run outside the main session context: Claude Code uses sub-agents, and Codex uses custom agents installed under `~/.codex/agents/`. Optional **Codex Companion Reviewers** (off by default) provide a Claude Code plugin second opinion using OpenAI Codex.
+Both reviewers run outside the main session context: Claude Code uses sub-agents, and Codex uses custom agents installed under `~/.codex/agents/`. Optional **Codex Companion Reviewers** (off by default) provide a Claude Code plugin second opinion using OpenAI Codex. The **Changes Review** and **Codex Companion Changes Review** toggles also govern [`/fix`](/docs/workflows/fix), which runs the same reviewers at finalise.
 
 **Codex runs at most once per `/spec` invocation.** Plan iterations (annotation feedback, verify re-runs, fixing prior findings) reuse the result of the first Codex review instead of re-launching — a sentinel file in the session directory enforces this. The bugfix planning phase no longer runs Codex at all; adversarial review is most valuable on real code, not on a plan.
 

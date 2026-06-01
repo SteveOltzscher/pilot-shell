@@ -11,7 +11,7 @@
    | CLI/scripts | Output format, flags, exit codes                   |
    | Data/config | Schema, migration, validation, defaults            |
 
-4. **⛔ Code-first rule: ground every question in the Step 3 Workspace Scan output.** Before formulating a question, ask "can I answer this from the codebase?" If yes, do that instead — don't ask. For questions you do ask, **option labels must reference real files and symbols when the scan found them** — e.g., `Extend LicenseAuth in launcher/auth.py:42`, not `Extend existing module`. Only ask the user about decisions the code can't make — purpose, priority trade-offs, scope boundaries, behavioral expectations not yet encoded.
+4. **Code-first rule: ground every question in the Step 3 Workspace Scan output.** Before formulating a question, ask "can I answer this from the codebase?" If yes, do that instead — don't ask. For questions you do ask, **option labels must reference real files and symbols when the scan found them** — e.g., `Extend LicenseAuth in launcher/auth.py:42`, not `Extend existing module`. Only ask the user about decisions the code can't make — purpose, priority trade-offs, scope boundaries, behavioral expectations not yet encoded.
 
    - If `Greenfield?: yes` in the scan output, fall back to generic options and note the fallback under "Autonomous Decisions" in Step 9.
    - If the scan output names symbols/files relevant to a question, generic labels are a regression — use the names. Asking the user about facts already in the codebase, or asking with abstract options when grounded ones are available, is the single biggest source of unnecessary friction in planning.

@@ -55,12 +55,12 @@ If Step 2 is incomplete, you cannot propose fixes. Symptom fixes are failure. Re
 - **Lean ≠ skipping steps.** Small bugs get short tasks, not fewer tasks. The three-task structure (Reproducing Test → Fix → Quality Gate) is non-negotiable.
 - **Plan file is source of truth** — survives across auto-compaction cycles
 <!-- CC-ONLY -->
-- **ALWAYS use `AskUserQuestion` tool** for clarifications — never list numbered questions in plain text
+- **Use the `AskUserQuestion` tool for clarifications** — it renders a structured form; don't fall back to plain-text numbered questions
 <!-- /CC-ONLY -->
 <!-- CODEX-START
-- **ALWAYS use plain-text numbered options** for clarifications — never refer to the unavailable Claude question tool as callable in Codex
+- **Use plain-text numbered options for clarifications** — the Claude question tool isn't callable in Codex
 CODEX-END -->
-- **⛔ If `PILOT_PLAN_QUESTIONS_ENABLED` is `"false"` (from Step 0),** skip all `AskUserQuestion` calls (Steps 2.1, 2.5 escalation, 3 approach selection). Make reasonable default assumptions (including selecting the recommended fix approach) and document them in the plan. Continue autonomously.
+- **If `PILOT_PLAN_QUESTIONS_ENABLED` is `"false"` (from Step 0),** skip all `AskUserQuestion` calls (Steps 2.1, 2.5 escalation, 3 approach selection). Make reasonable default assumptions (including selecting the recommended fix approach) and document them in the plan. Continue autonomously.
 
 <!-- CODEX-START
 
@@ -69,6 +69,7 @@ CODEX-END -->
 For Codex, bugfix quality means a traced root cause, a reproducing RED test plan, and a source-level fix strategy. It does not mean exhaustive graph traversal.
 
 - Reach the first complete bugfix plan before context reaches 35% unless the bug is not reproducible.
+- **Planning context ceiling — total planning must not exceed ~55% of the context window (hard cap 60%).** The 35% first-draft target leaves headroom for the RED test plan and self-review, NOT deeper traversal. On the ~256K Codex window that is ≈140K tokens. If context approaches ~55% before approval, stop investigating and finalize the bugfix plan with the traced root cause, RED test name, and fix file you already have — the fix itself happens during implementation, which needs the remaining budget. Planning that eats >60% has already failed.
 - Use a bounded investigation: one reproduction attempt path, at most one CodeGraph orientation call when the entry point is unknown, one Semble intent search, then targeted reads of the suspected files. Skip CodeGraph for docs, rules, markdown, config, UI copy, reviews of a known diff, or named paths.
 - Run callers/callees/impact only after a likely root-cause function is known and the bug spans more than one component.
 - Ask at most one bundled clarification prompt before the approval prompt. If the missing signal blocks reproduction, ask; otherwise record a Medium-confidence root cause and a verification task.

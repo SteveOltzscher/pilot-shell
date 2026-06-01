@@ -84,6 +84,87 @@ class TestPostCompactRestoreHook:
 
     @patch("post_compact_restore.read_hook_stdin")
     @patch("post_compact_restore.get_session_plan_path")
+    def test_suppresses_foreign_project_plan(self, mock_plan_path, mock_stdin, capsys, tmp_path):
+        """Cross-session bleed: an absolute plan path belonging to ANOTHER project
+        (the shared 'default' active_plan.json when PILOT_SESSION_ID is unset) must
+        not be surfaced as the restored active plan in an unrelated repo."""
+        from post_compact_restore import run_post_compact_restore
+
+        current_project = tmp_path / "current-project"
+        current_project.mkdir()
+        foreign_plan = tmp_path / "other-project" / "docs" / "plans" / "2026-05-27-foreign.md"
+        foreign_plan.parent.mkdir(parents=True)
+        foreign_plan.write_text("# Foreign\n\nStatus: PENDING\n")
+
+        plan_json = tmp_path / "active_plan.json"
+        plan_json.write_text(json.dumps({"status": "PENDING", "plan_path": str(foreign_plan)}))
+        mock_plan_path.return_value = plan_json
+        mock_stdin.return_value = {"session_id": "test123"}
+
+        with patch.dict(
+            os.environ,
+            {"PILOT_SESSION_ID": "test123", "CLAUDE_PROJECT_ROOT": str(current_project)},
+            clear=True,
+        ):
+            result = run_post_compact_restore()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        assert str(foreign_plan) not in captured.out, "Foreign-project plan must not be surfaced after compaction"
+        assert "No active plan" in captured.out
+
+    @patch("post_compact_restore.read_hook_stdin")
+    @patch("post_compact_restore.get_session_plan_path")
+    @patch("post_compact_restore._sessions_base")
+    def test_suppresses_foreign_project_plan_from_fallback_state(
+        self, mock_sessions_base, mock_plan_path, mock_stdin, capsys, tmp_path
+    ):
+        """Cross-session bleed (fallback path): a foreign-project plan that reached
+        this session's pre-compact-state.json (captured from the shared 'default'
+        active_plan.json before compaction) must not be surfaced after compaction.
+
+        Mirrors test_suppresses_foreign_project_plan but for the fallback-state
+        branch, which previously had no plan_in_current_project guard."""
+        from post_compact_restore import run_post_compact_restore
+
+        current_project = tmp_path / "current-project"
+        current_project.mkdir()
+        foreign_plan = tmp_path / "other-project" / "docs" / "plans" / "2026-05-31-foreign.md"
+        foreign_plan.parent.mkdir(parents=True)
+        foreign_plan.write_text("# Foreign\n\nStatus: PENDING\n")
+
+        sessions_dir = tmp_path / "sessions"
+        mock_sessions_base.return_value = sessions_dir
+        session_dir = sessions_dir / "test123"
+        session_dir.mkdir(parents=True)
+        (session_dir / "pre-compact-state.json").write_text(
+            json.dumps(
+                {
+                    "trigger": "auto",
+                    "active_plan": {"plan_path": str(foreign_plan), "status": "PENDING"},
+                }
+            )
+        )
+
+        mock_plan_path.return_value = tmp_path / "nonexistent.json"
+        mock_stdin.return_value = {"session_id": "test123"}
+
+        with patch.dict(
+            os.environ,
+            {"PILOT_SESSION_ID": "test123", "CLAUDE_PROJECT_ROOT": str(current_project)},
+            clear=True,
+        ):
+            result = run_post_compact_restore()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        assert str(foreign_plan) not in captured.out, (
+            "Foreign-project plan must not be surfaced from fallback state after compaction"
+        )
+        assert "No active plan" in captured.out
+
+    @patch("post_compact_restore.read_hook_stdin")
+    @patch("post_compact_restore.get_session_plan_path")
     @patch("os.environ", {"PILOT_SESSION_ID": "test123"})
     def test_handles_no_active_plan(self, mock_plan_path, mock_stdin, capsys):
         """Should handle case where no active plan exists."""

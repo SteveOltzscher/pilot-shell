@@ -1,7 +1,7 @@
 ## Step 4: Ask Clarifying Questions
 
 <!-- CC-ONLY -->
-**⛔ ALWAYS use the `AskUserQuestion` tool** — never list numbered questions in plain text. Each question gets its own entry with 2-4 predefined options users can select. This provides a structured form UI that is much easier to answer than freeform text.
+**Use the `AskUserQuestion` tool for clarifications** — it renders a structured form that's much easier to answer than freeform text, with each question its own entry of 2-4 predefined options. Don't fall back to numbered questions in prose.
 <!-- /CC-ONLY -->
 
 <!-- CC-ONLY -->
@@ -11,13 +11,13 @@
 **Codex clarification cap:** ask one bundled plain-text numbered-options prompt with at most 3 decision points. If the user's answer opens a major new unknown, ask one follow-up prompt; otherwise draft the PRD with documented assumptions.
 CODEX-END -->
 
-**⛔ Skip obvious questions.** Do not ask anything already answered by the one-line idea, the codebase exploration in Step 1, or earlier answers in this conversation. The goal is to surface what the user hasn't thought about yet, not to collect a standard intake form.
+**Skip obvious questions.** Do not ask anything already answered by the one-line idea, the codebase exploration in Step 1, or earlier answers in this conversation. The goal is to surface what the user hasn't thought about yet, not to collect a standard intake form.
 
 <!-- CC-ONLY -->
-**⛔ Code-first rule.** Before each question, ask "can the codebase answer this?" If yes — read the code. Use `codegraph_context`, `codegraph_search`, `codegraph_explore`, or Semble to resolve "how does X currently work / where does Y live / what's the existing pattern for Z". Only ask the user about things code can't tell you: purpose, priorities, audience, constraints, scope boundaries, behavioural expectations not yet encoded. Asking the user about facts the code already encodes wastes their time and signals you didn't explore.
+**Code-first rule.** Before each question, ask "can the codebase answer this?" If yes — read the code. Use `codegraph_context`, `codegraph_search`, `codegraph_explore`, or Semble to resolve "how does X currently work / where does Y live / what's the existing pattern for Z". Only ask the user about things code can't tell you: purpose, priorities, audience, constraints, scope boundaries, behavioural expectations not yet encoded. Asking the user about facts the code already encodes wastes their time and signals you didn't explore.
 <!-- /CC-ONLY -->
 <!-- CODEX-START
-**⛔ Code-first rule.** Before asking, answer codebase facts with the bounded context from Step 1 and targeted reads. Only ask about purpose, priorities, audience, scope boundaries, and behavior the code cannot encode.
+**Code-first rule.** Before asking, answer codebase facts with the bounded context from Step 1 and targeted reads. Only ask about purpose, priorities, audience, scope boundaries, and behavior the code cannot encode.
 CODEX-END -->
 
 Coverage areas (ask only where genuinely unclear):
