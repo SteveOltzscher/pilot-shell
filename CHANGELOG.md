@@ -2,6 +2,13 @@
 
 All notable changes to Pilot Shell will be documented in this file.
 
+## [9.2.3] - 2026-06-02
+
+### Bug Fixes
+
+- Fix flaky getChildProcesses non-Windows enumeration tests
+- Add CC to Dev Container and fix Codex Reviewer Agents
+
 ## [9.2.2] - 2026-06-02
 
 ### Bug Fixes
