@@ -54,9 +54,10 @@ fi
 
 # --- 1d. Python lint gate (ruff + vulture + launcher⊥installer boundary) ---
 if [ -n "$LAUNCHER_CHANGED" ] || [ -n "$INSTALLER_CHANGED" ]; then
-  echo "[pre-commit] Python source changed — running lint gate (ruff + vulture + import-linter)..."
+  echo "[pre-commit] Python source changed — running lint gate (ruff + vulture + deadcode + import-linter)..."
   uv run ruff check launcher installer pilot/hooks
   uv run vulture
+  uv run deadcode launcher installer
   uv run lint-imports
   echo "[pre-commit] Lint gate passed."
 fi

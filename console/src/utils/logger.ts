@@ -15,7 +15,7 @@ export enum LogLevel {
   SILENT = 4,
 }
 
-export type Component =
+type Component =
   | "HOOK"
   | "WORKER"
   | "SDK"

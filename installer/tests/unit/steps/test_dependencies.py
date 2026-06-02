@@ -1411,34 +1411,6 @@ class TestPrecacheNpxMcpServers:
             mock_run.assert_not_called()
 
 
-class TestMacosArm64Detection:
-    """Test macOS Apple Silicon detection."""
-
-    @patch("platform.machine", return_value="arm64")
-    @patch("platform.system", return_value="Darwin")
-    def test_is_macos_arm64_true(self, _mock_system, _mock_machine):
-        """Returns True on macOS arm64 (Apple Silicon)."""
-        from installer.platform_utils import is_macos_arm64
-
-        assert is_macos_arm64() is True
-
-    @patch("platform.machine", return_value="x86_64")
-    @patch("platform.system", return_value="Darwin")
-    def test_is_macos_arm64_false_intel(self, _mock_system, _mock_machine):
-        """Returns False on macOS Intel."""
-        from installer.platform_utils import is_macos_arm64
-
-        assert is_macos_arm64() is False
-
-    @patch("platform.machine", return_value="arm64")
-    @patch("platform.system", return_value="Linux")
-    def test_is_macos_arm64_false_linux(self, _mock_system, _mock_machine):
-        """Returns False on Linux arm64."""
-        from installer.platform_utils import is_macos_arm64
-
-        assert is_macos_arm64() is False
-
-
 class TestInstallPrettier:
     """Test prettier global installation."""
 

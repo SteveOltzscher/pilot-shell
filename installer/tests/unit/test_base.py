@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from installer.context import InstallContext
 
 
@@ -51,12 +49,6 @@ class TestStepProtocol:
 
         step = TestStep()
         assert step.name == "test"
-
-    def test_step_registry_exists(self):
-        """Step registry should be available for step lookup."""
-        from installer.steps import STEP_REGISTRY
-
-        assert isinstance(STEP_REGISTRY, dict)
 
 
 class TestInstallerPackage:

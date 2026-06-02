@@ -15,12 +15,6 @@ class FatalInstallError(InstallError):
     pass
 
 
-class ConfigError(InstallError):
-    """Configuration error."""
-
-    pass
-
-
 class InstallationCancelled(InstallError):
     """Installation was cancelled by user (CTRL+C)."""
 

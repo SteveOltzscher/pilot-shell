@@ -148,9 +148,9 @@ class TestMigrationIdempotency:
         """create_if_missing=True (used by installer) triggers fresh-install defaults.
 
         Regression: previously the installer skipped migrations entirely when no
-        config file existed, leaving fresh Max installs to fall through to
-        DEFAULT_MODEL_CONFIG's sonnet default for spec-implement/spec-verify —
-        which doesn't work on Max plan because Max does not include sonnet 1M.
+        config file existed, leaving fresh Max installs to fall through to the
+        legacy sonnet default for spec-implement/spec-verify — which doesn't work
+        on Max plan because Max does not include sonnet 1M.
         """
         from installer.steps.config_migration import (
             CURRENT_CONFIG_VERSION,

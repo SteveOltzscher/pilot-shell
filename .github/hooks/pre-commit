@@ -1,11 +1,33 @@
 #!/usr/bin/env bash
-# Pre-commit hook: Run Trivy security scan before committing.
+# Pre-commit hook: console dead-code gate (knip) + Trivy security scan.
 # Install: ln -sf ../../.github/hooks/pre-commit .git/hooks/pre-commit
 #
-# Requires: trivy (brew install trivy / apt-get install trivy)
-# Skip: SKIP_TRIVY=1 git commit ...
+# Requires: trivy (brew install trivy / apt-get install trivy); bun for the
+#           console knip check (auto-skipped when the console is untouched).
+# Skip: SKIP_TRIVY=1 and/or SKIP_KNIP=1 git commit ...
 
 set -euo pipefail
+
+# --- Console dead-code gate (knip) -------------------------------------------
+# Runs only when staged changes touch the console workspace (TS sources or
+# dependency/knip config). Degrades gracefully when the toolchain is missing;
+# CI (release.yml / release-dev.yml) is the hard gate.
+if [ "${SKIP_KNIP:-0}" != "1" ]; then
+  console_changes="$(git diff --cached --name-only --diff-filter=ACMR -- console/ \
+    | grep -E '\.tsx?$|^console/(package|knip)\.json$' || true)"
+  if [ -n "$console_changes" ]; then
+    if ! command -v bun &>/dev/null || [ ! -x console/node_modules/.bin/knip-bun ]; then
+      echo "⚠ bun/knip unavailable — skipping console dead-code check (cd console && bun install)"
+    else
+      echo "Running knip (console dead-code check)..."
+      if ! ( cd console && bun run knip ); then
+        echo "✖ knip found dead code / unused deps/exports in console/. Fix them, or bypass with SKIP_KNIP=1." >&2
+        exit 1
+      fi
+      echo "Dead-code check passed."
+    fi
+  fi
+fi
 
 if [ "${SKIP_TRIVY:-0}" = "1" ]; then
   exit 0

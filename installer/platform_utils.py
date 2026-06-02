@@ -9,29 +9,6 @@ import threading
 from pathlib import Path
 
 
-def has_nvidia_gpu() -> bool:
-    """Check if NVIDIA GPU is available via nvidia-smi or /dev/nvidia* fallback."""
-    try:
-        proc = subprocess.run(
-            ["nvidia-smi"],
-            capture_output=True,
-            timeout=10,
-        )
-        if proc.returncode == 0:
-            return True
-    except (FileNotFoundError, subprocess.TimeoutExpired, OSError, subprocess.SubprocessError):
-        pass
-
-    try:
-        nvidia_devices = list(Path("/dev").glob("nvidia*"))
-        if nvidia_devices:
-            return True
-    except (OSError, PermissionError):
-        pass
-
-    return False
-
-
 def command_exists(command: str) -> bool:
     """Check if a command exists in PATH."""
     return shutil.which(command) is not None
@@ -50,9 +27,9 @@ def is_claude_installed() -> bool:
     Per README prerequisites, users install Claude Code via the native installer;
     the installer only detects its presence (never installs it).
 
-    Fallback paths mirror the canonical set used by ``launcher/agent_runtime.py``:
-    Anthropic's native installer (~/.claude/local/bin/claude), system bin
-    (/usr/local/bin/claude), and the macOS app bundle (/Applications/Claude.app).
+    Fallback paths cover Anthropic's native installer (~/.claude/local/bin/claude),
+    system bin (/usr/local/bin/claude), and the macOS app bundle
+    (/Applications/Claude.app).
     """
     home = Path.home()
     return _agent_present(
@@ -224,13 +201,6 @@ def is_linux_arm64() -> bool:
     import platform
 
     return platform.system() == "Linux" and platform.machine() in ("aarch64", "arm64")
-
-
-def is_macos_arm64() -> bool:
-    """Check if running on macOS with Apple Silicon (M-series chip)."""
-    import platform
-
-    return platform.system() == "Darwin" and platform.machine() == "arm64"
 
 
 def get_shell_config_files() -> list[Path]:

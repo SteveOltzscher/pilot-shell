@@ -70,20 +70,10 @@ class TestErrorHierarchy:
 
         assert issubclass(FatalInstallError, InstallError)
 
-    def test_config_error_is_install_error(self):
-        """ConfigError inherits from InstallError."""
-        from installer.errors import ConfigError, InstallError
-
-        assert issubclass(ConfigError, InstallError)
-
     def test_errors_have_message(self):
         """All errors can have a message."""
-        from installer.errors import (
-            ConfigError,
-            FatalInstallError,
-            InstallError,
-        )
+        from installer.errors import FatalInstallError, InstallError
 
-        for exc_class in [InstallError, FatalInstallError, ConfigError]:
+        for exc_class in [InstallError, FatalInstallError]:
             exc = exc_class("test message")
             assert str(exc) == "test message"

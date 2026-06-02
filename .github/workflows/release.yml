@@ -275,6 +275,10 @@ jobs:
         working-directory: console
         run: bun run typecheck
 
+      - name: Knip (dead code, unused deps & exports)
+        working-directory: console
+        run: bun run knip
+
       - name: Build hooks
         working-directory: console
         run: bun run build
@@ -284,7 +288,7 @@ jobs:
         run: bun run build:viewer
 
   lint:
-    name: Lint (ruff + vulture + import boundary)
+    name: Lint (ruff + vulture + deadcode + import boundary)
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -309,13 +313,16 @@ jobs:
       - name: Install lint dependencies
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install . ruff vulture import-linter
+          python3 -m pip install . ruff vulture deadcode import-linter
 
       - name: Ruff
         run: ruff check launcher installer pilot/hooks
 
       - name: Vulture (dead code)
         run: vulture
+
+      - name: Deadcode (unused symbols — launcher + installer)
+        run: deadcode launcher installer
 
       - name: Import boundary (launcher must not import installer, and vice-versa)
         run: lint-imports
