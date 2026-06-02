@@ -2,6 +2,12 @@
 
 All notable changes to Pilot Shell will be documented in this file.
 
+## [9.2.1] - 2026-06-01
+
+### Bug Fixes
+
+- Check for Pilot Shell updates every 30 min and on session start
+
 ## [9.2.0] - 2026-06-01
 
 ### Bug Fixes
