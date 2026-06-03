@@ -15,9 +15,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from _checkers.charset import check_charset
+from _checkers.dotnet import DOTNET_EXTENSIONS, check_dotnet
 from _checkers.go import check_go
 from _checkers.python import check_python
 from _checkers.tdd import (
+    has_dotnet_test_file,
     has_go_test_file,
     has_python_test_file,
     has_related_failing_test,
@@ -64,6 +66,12 @@ def _tdd_check(tool_name: str, tool_input: dict, file_path: str) -> str:
             return ""
         base_name = Path(file_path).stem
         return f"TDD Reminder: No test file found\n    Consider creating {base_name}_test.go first."
+
+    if file_path.endswith((".cs", ".razor")):
+        if has_dotnet_test_file(file_path):
+            return ""
+        class_name = Path(file_path).stem
+        return f"TDD Reminder: No test file found for '{class_name}'\n    Consider creating {class_name}Tests.cs first."
 
     return ""
 
@@ -195,6 +203,8 @@ def main() -> int:
             _, file_reason = check_typescript(target_file)
         elif target_file.suffix == ".go":
             _, file_reason = check_go(target_file)
+        elif target_file.suffix in DOTNET_EXTENSIONS:
+            _, file_reason = check_dotnet(target_file)
 
         tdd_reason = _tdd_check(tool_name, tool_input, file_path_str)
         charset_reason = check_charset(target_file, changed_text.get(file_path_str))

@@ -27,6 +27,13 @@ EXCLUDED_EXTENSIONS = [
     ".env",
     ".env.example",
     ".sql",
+    ".dll",
+    ".exe",
+    ".pdb",
+    ".csproj",
+    ".sln",
+    ".props",
+    ".targets",
 ]
 
 EXCLUDED_DIRS = [
@@ -50,6 +57,8 @@ EXCLUDED_DIRS = [
     "/.venv/",
     "/venv/",
     "/__pycache__/",
+    "/bin/",
+    "/obj/",
 ]
 
 
@@ -85,6 +94,11 @@ def is_test_file(file_path: str) -> bool:
 
     if name.endswith("_test.go"):
         return True
+
+    if name.endswith(".cs"):
+        stem = path.stem
+        if stem.endswith("Tests") or stem.endswith("Test"):
+            return True
 
     return False
 
@@ -135,6 +149,42 @@ def _find_test_dirs(start: Path) -> list[Path]:
         if current.parent == current:
             break
         current = current.parent
+    return dirs
+
+
+def _find_dotnet_test_dirs(start: Path) -> list[Path]:
+    """Walk up from start to find common .NET test directories/projects."""
+    dirs: list[Path] = []
+    current = start
+    seen: set[Path] = set()
+
+    for _ in range(15):
+        for name in ("tests", "test", "Tests"):
+            candidate = current / name
+            if candidate.is_dir() and candidate not in seen:
+                dirs.append(candidate)
+                seen.add(candidate)
+
+        try:
+            for child in current.iterdir():
+                if not child.is_dir() or child in seen:
+                    continue
+                child_lower = child.name.lower()
+                if (
+                    child_lower.endswith(".tests")
+                    or child_lower.endswith(".test")
+                    or child_lower.endswith("tests")
+                    or child_lower.endswith("test")
+                ):
+                    dirs.append(child)
+                    seen.add(child)
+        except OSError:
+            pass
+
+        if current.parent == current:
+            break
+        current = current.parent
+
     return dirs
 
 
@@ -300,6 +350,57 @@ def has_go_test_file(impl_path: str) -> bool:
     return _search_test_dirs(test_dirs, base_name, ["_test.go"])
 
 
+def has_dotnet_test_file(impl_path: str) -> bool:
+    """Check if corresponding .NET test file exists (sibling or in test dirs)."""
+    path = Path(impl_path)
+
+    if not path.name.endswith((".cs", ".razor")):
+        return False
+
+    base_name = path.stem
+    if not base_name:
+        return False
+
+    sibling_names = [f"{base_name}Tests.cs", f"{base_name}Test.cs"]
+    for name in sibling_names:
+        if (path.parent / name).exists():
+            return True
+
+    test_dirs = _find_dotnet_test_dirs(path.parent)
+    return _search_test_dirs(test_dirs, "", sibling_names)
+
+
+def has_test_importing_module_dotnet(impl_path: str) -> bool:
+    """Return True if any nearby .NET test references the edited module/component."""
+    path = Path(impl_path)
+    if not path.name.endswith((".cs", ".razor")):
+        return False
+
+    module_name = path.stem
+    if not module_name:
+        return False
+
+    test_dirs = _find_dotnet_test_dirs(path.parent)
+    if not test_dirs:
+        return False
+
+    symbol_re = re.compile(rf"\b{re.escape(module_name)}\b")
+    test_attr_re = re.compile(r"\[(Fact|Theory|Test|TestMethod|TestCase|TestCaseSource)\b")
+
+    for test_dir in test_dirs:
+        for test_file in test_dir.glob("**/*.cs"):
+            try:
+                src = test_file.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            if not test_attr_re.search(src):
+                continue
+            if symbol_re.search(src):
+                return True
+
+    return False
+
+
 def _is_import_line(line: str) -> bool:
     """Check if a line is part of an import statement."""
     if line.startswith(("import ", "from ")):
@@ -426,6 +527,20 @@ def run_tdd_enforcer() -> int:
 
     if file_path.endswith(".go"):
         if has_go_test_file(file_path):
+            return 0
+
+        return warn(
+            "No test covers this module's behaviour",
+            "Consider whether existing tests cover this behaviour. "
+            "If not, add a test for the new behaviour — not necessarily a new file. "
+            "See pilot/rules/testing.md § Test Parsimony.",
+        )
+
+    if file_path.endswith((".cs", ".razor")):
+        if has_dotnet_test_file(file_path):
+            return 0
+
+        if has_test_importing_module_dotnet(file_path):
             return 0
 
         return warn(

@@ -16,7 +16,8 @@ The structure of tests should be **contra-variant** with the structure of code (
 
 #### Red-Green-Refactor
 
-1. **RED** — One minimal test for the desired behavior. Behavior, not implementation. Mocks for external deps only. Naming: Python `test_<function>_<scenario>_<expected>` | TS `it("should <behavior> when <condition>")`.
+1. **RED** — One minimal test for the desired behavior. Behavior, not implementation. Mocks for external deps only.
+   - **Naming:** Python: `test_<function>_<scenario>_<expected>` | TS: `it("should <behavior> when <condition>")` | C#: `MethodName_Scenario_ExpectedResult` (xUnit `[Fact]` or `[Theory]`)
 2. **VERIFY RED** — Run it; confirm it fails because the feature doesn't exist (not syntax). If it passes → rewrite.
 3. **GREEN** — Simplest code that passes. No extras, no refactor. Hardcoding is fine.
 4. **VERIFY GREEN** — Full suite passes. Check diagnostics.
@@ -39,8 +40,8 @@ The structure of tests should be **contra-variant** with the structure of code (
 
 | Type | When | Requirements |
 |------|------|--------------|
-| **Unit** | Pure functions, business logic, validation | <1 ms each, mock ALL external deps, `@pytest.mark.unit` |
-| **Integration** | DB, external APIs, file I/O, auth flows | Real test deps, fixtures, cleanup, `@pytest.mark.integration` |
+| **Unit** | Pure functions, business logic, validation | <1 ms each, mock ALL external deps, `@pytest.mark.unit` / `[Trait("Category", "Unit")]` |
+| **Integration** | DB, external APIs, file I/O, auth flows | Real test deps, fixtures, cleanup, `@pytest.mark.integration` / `[Trait("Category", "Integration")]` |
 | **E2E** | Complete user workflows, API chains | Test entire flow |
 
 External deps? No → unit. Yes → integration. Complete user workflow? Yes → E2E.
@@ -55,6 +56,7 @@ Use when behavior depends on data shape, ranges, or combinations — not single 
 |------|------|---------|
 | Python | `hypothesis` | `@given(st.lists(st.integers()))` |
 | TypeScript | `fast-check` | `fc.assert(fc.property(fc.array(fc.integer()), ...))` |
+| C# | `FsCheck.Xunit` | `[Property] public bool RoundTrip(int x) => Decode(Encode(x)) == x;` |
 | Go | `go test -fuzz` | `func FuzzFoo(f *testing.F) { f.Fuzz(...) }` |
 
 **Use:** parsers, serializers, invariants, encode/decode roundtrips, bug-fix preservation. **Don't:** simple CRUD, UI, fixed-input validation, config. Supplements example-based tests, doesn't replace. Keep strategies simple. CI runs: `max_examples`/`numRuns` 100–200.
@@ -62,23 +64,44 @@ Use when behavior depends on data shape, ranges, or combinations — not single 
 ### Running Tests
 
 ```bash
-uv run pytest -q                   # Python (quiet)
-uv run pytest --cov=src            # Coverage report (gate is per-critical-path; see "Test Strategy & Coverage" above)
-bun test                           # Bun
-npm test -- --silent               # Jest/Vitest
+uv run pytest -q                              # Python (quiet)
+uv run pytest --cov=src                       # Coverage report (gate is per-critical-path; see "Test Strategy & Coverage" above)
+bun test                                      # Bun
+npm test -- --silent                          # Jest/Vitest
+dotnet test -v q                              # .NET (quiet)
+dotnet test --filter "Category=Unit"          # .NET run only unit tests
 ```
 
 ### Mandatory Mocking in Unit Tests
 
-| Call | MUST mock | Example |
-|------|-----------|---------|
-| HTTP/network | `httpx`, `requests` | `@patch("module.httpx.Client")` |
+**Python / Go:**
+
+| Call Type | MUST Mock | Example |
+|-----------|-----------|---------|
+| HTTP/Network | `httpx`, `requests` | `@patch("module.httpx.Client")` |
 | Subprocess | `subprocess.run` | `@patch("module.subprocess.run")` |
 | File I/O | `open`, `Path.read_text` | `@patch("builtins.open")` or `tmp_path` |
-| Database | SQLite, PostgreSQL | Test fixtures |
+| Database | SQLite, PostgreSQL | Use test fixtures |
 | External APIs | Any third-party | Mock the client |
 
-Mock at module level (where imported, not where defined). Test > 1 s = likely unmocked I/O.
+Mock at module level (where imported, not where defined). Test > 1s = likely unmocked I/O.
+
+**C# (.NET):**
+
+Use constructor injection + interfaces for testability. Use mocking framework for mocking.
+
+| Call Type | MUST Mock | Example |
+|-----------|-----------|---------|
+| HTTP/Network | `HttpClient` via `IHttpClientFactory` | `Substitute.For<IHttpClientFactory>()` or `MockHttpMessageHandler` |
+| File I/O | `IFileSystem` (System.IO.Abstractions) | `new MockFileSystem()` |
+| Database | `DbContext`, repositories | In-memory provider or `Substitute.For<IRepository>()` |
+| External APIs | Any injected service interface | `Substitute.For<IExternalService>()` |
+| Time | `DateTime.Now`, `DateTimeOffset.UtcNow` | Inject `TimeProvider` (.NET 8+) or `IClock` |
+| Configuration | `IOptions<T>` | `Options.Create(new MyOptions { ... })` |
+
+Never use `new HttpClient()` or static service locators in code under test — inject interfaces instead. Use `WebApplicationFactory<Program>` for integration tests of ASP.NET endpoints.
+Use dotnet-coverage global tool to measure test coverage.
+Avoid database polling, utilize TaskCompletionSource instead.
 
 ### ⛔ E2E: Frontend/UI (MANDATORY for web apps)
 
@@ -88,7 +111,10 @@ Any change that affects what the user sees MUST be verified with browser automat
 
 When a function gains a new dependency (subprocess, helper, I/O), update ALL existing tests for that function. Tests passing locally with real binaries fail in CI without them — the #1 cause of CI-only failures.
 
-**Checklist:** (1) `Grep` the function name in `tests/`; (2) verify subprocess/I/O calls are mocked in each test; (3) run with `--tb=short` to surface unmocked calls fast.
+**Checklist:**
+1. `Grep` for the function name in `tests/` directories (Python/TS) or `*.Tests` projects (.NET)
+2. For each test: verify all subprocess/I/O calls are mocked
+3. Run tests with `--tb=short` (Python) or `dotnet test -v q` (.NET) to catch unmocked calls fast
 
 ### Anti-Patterns
 
@@ -99,6 +125,9 @@ When a function gains a new dependency (subprocess, helper, I/O), update ALL exi
 - **Unnecessary mocks** — only for external deps.
 - **Test-only methods in production** — never add methods/properties/flags purely for test access. Refactor so behavior is observable through public interfaces.
 - **Mocking without understanding** — a mock that doesn't reflect real behavior is a lie. Tests pass against the lie, fail against reality.
+- **Concrete dependencies in .NET** — classes that `new` up their own dependencies instead of accepting interfaces via constructor injection are untestable. If you can't substitute a dependency in a test, the design is wrong.
+- **Shared mutable state in xUnit** — xUnit creates a new class instance per test by default. Don't use `IClassFixture<T>` for mutable state shared across tests. Use `IAsyncLifetime` for async setup/teardown.
+- **Ignoring `IDisposable` in tests** — test fixtures that open connections or create temp files must dispose them. Use `IAsyncLifetime.DisposeAsync()` or `IDisposable.Dispose()` in the fixture.
 
 ### Test Parsimony — what NOT to do
 
@@ -118,10 +147,13 @@ Every test failure MUST be fixed before work is done. Run the FULL suite, not ju
 - [ ] Tests assert observable behaviour, not internal structure
 - [ ] No redundant tests on the same observable path
 - [ ] Critical-path coverage adequate (no blanket %; reviewer judges)
-- [ ] Tests follow naming convention
+- [ ] Tests follow naming convention (`test_func_scenario_expected` / `MethodName_Scenario_Expected`)
 - [ ] Unit tests mock external dependencies
 - [ ] Full test suite passes (0 failures) — not just your files
 - [ ] Actual program executed and verified
+- [ ] .NET: `dotnet build` compiles clean (zero warnings with `TreatWarningsAsErrors`)
+- [ ] .NET: `dotnet format --verify-no-changes` passes
+- [ ] .NET: No nullable warnings
 
 ### Assertion-Correctness Warning
 

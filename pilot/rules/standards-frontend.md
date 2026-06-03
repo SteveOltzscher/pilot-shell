@@ -5,11 +5,13 @@ paths:
   - "**/*.html"
   - "**/*.vue"
   - "**/*.svelte"
+  - "**/*.razor"
   - "**/*.css"
   - "**/*.scss"
   - "**/*.sass"
   - "**/*.less"
   - "**/*.module.css"
+  - "**/*.razor.css"
 ---
 
 # Frontend Standards
@@ -19,18 +21,20 @@ paths:
 **Small, focused components with single responsibility. Compose complex UIs from simple pieces.**
 
 - **Single responsibility:** If you need "and" to describe it, split it
-- **Minimal props:** Under 5-7. More = component doing too much. Always typed with defaults.
-- **State:** Keep local — only lift when multiple components need it. Prop drilling 3+ levels → use composition or context.
-- **Naming:** Components: PascalCase nouns. Props: camelCase, booleans `is*`/`has*`. Events: `on*` for props, `handle*` internal.
+- **Minimal props:** Under 5-7. More = component doing too much. Always typed with defaults. **Blazor:** Use `[Parameter]` properties with defaults; use `[EditorRequired]` for mandatory parameters.
+- **State:** Keep local — only lift when multiple components need it. Prop drilling 3+ levels → use composition or context. **Blazor:** Use `[CascadingParameter]` instead of prop drilling. For shared state, inject a registered state service over cascading values.
+- **Naming:** Components: PascalCase nouns. Props: camelCase, booleans `is*`/`has*`. Events: `on*` for props, `handle*` internal. **Blazor:** Parameters and events follow C# PascalCase. Use `EventCallback<T>` for parent notification — never call `StateHasChanged()` from a child to update a parent.
 - **Split when:** >600-800 lines, multiple responsibilities, reusable elsewhere, testing becomes difficult.
+- **Blazor code organization:** Prefer code-behind partial classes (`MyComponent.razor.cs`) over large `@code` blocks. Keep markup in `.razor`, logic in `.razor.cs`.
 
 ## CSS
 
-**Follow project methodology consistently. Identify first: Utility-first (Tailwind), CSS Modules, BEM, or CSS-in-JS. Never mix.**
+**Follow project methodology consistently. Identify first: Utility-first (Tailwind), CSS Modules, BEM, CSS-in-JS, or CSS isolation. Never mix.**
 
 - Use design tokens (`var(--color-primary)`) over hardcoded values
 - Work with the framework — if you need `!important`, reconsider your approach
 - Custom CSS only for: complex animations, unique effects, third-party integration, browser fixes
+- **Blazor:** Use CSS isolation (`MyComponent.razor.css`) for component-scoped styles. Styles auto-scope via `b-{hash}` attributes — no naming conventions needed. Use `::deep` to target child component markup.
 
 ## Accessibility
 
@@ -76,9 +80,10 @@ Then execute that direction with precision across every detail below.
 ## Performance
 
 - **Cache expensive work:** Parsing, transforming, or filtering data in a render/update path must be memoized. If input hasn't changed, output must not be recomputed.
-- **Isolate re-renders:** List items should not re-render when unrelated parent state changes. Use framework memoization primitives on list item components.
+- **Isolate re-renders:** List items should not re-render when unrelated parent state changes. Use framework memoization primitives on list item components. **Blazor:** Override `ShouldRender()` to skip unnecessary re-renders. Use `@key` on list items to help the diffing algorithm.
 - **Minimize dependency weight:** Import only what you use. Full library imports where tree-shaken alternatives exist waste bandwidth and parse time.
 - **Polling-safe:** If the view refreshes on an interval, child components must not redo expensive work when the underlying data hasn't changed.
+- **Blazor rendering:** Prefer `StateHasChanged()` only when needed — `EventCallback` triggers it automatically. Use `@rendermode InteractiveServer` or `InteractiveWebAssembly` intentionally; do not default to interactive when static SSR suffices. Dispose services and event handlers via `@implements IDisposable` / `IAsyncDisposable` to prevent memory leaks.
 
 ## Checklist
 
@@ -88,3 +93,4 @@ Then execute that direction with precision across every detail below.
 - [ ] Responsive: mobile-first, fluid, touch targets ≥ 44px
 - [ ] Performance: expensive work cached, re-renders isolated, deps tree-shaken, polling-safe
 - [ ] Design: intentional direction, visual depth, composition, no AI anti-patterns
+- [ ] Blazor: `[Parameter]`/`[EditorRequired]` typed, code-behind for logic, CSS isolation, `@key` on lists, disposables implemented, render mode intentional
