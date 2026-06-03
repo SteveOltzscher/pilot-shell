@@ -1,5 +1,28 @@
 ## Step 1: Setup — Read Plan, Detect Worktree, Set Up Task List
 
+<!-- CC-ONLY -->
+### 1.0 Plan Mode Exit Guard (MANDATORY safety net)
+
+**⛔ This is the very first action — before reading the plan or doing any other work.**
+
+`spec-plan` should have called `ExitPlanMode` before invoking this skill. If it didn't (model skip, approval edge case, etc.), you are still on Opus in plan mode and implementation will run on the wrong model. Exit now.
+
+```bash
+echo "MODEL_SWITCH=$PILOT_MODEL_SWITCH_ENABLED"
+```
+
+**If `MODEL_SWITCH=true`:**
+```
+ToolSearch(query="select:ExitPlanMode")   # deferred — load schema first
+ExitPlanMode(...)                          # safe to call even if already exited; exits plan mode → Sonnet
+```
+
+- If `ToolSearch` returns no tool: emit one visible line ("ExitPlanMode unavailable — implementation will run on current model") and continue.
+- If `MODEL_SWITCH=false` or unset: skip entirely — no plan mode was entered.
+
+**Do NOT skip this step to save tokens. An extra ExitPlanMode call costs nothing; running the entire implementation leg on Opus is expensive and wrong.**
+<!-- /CC-ONLY -->
+
 ### 1.1 Read Plan & Gather Context
 
 1. **Read the COMPLETE plan** — understand architecture and design

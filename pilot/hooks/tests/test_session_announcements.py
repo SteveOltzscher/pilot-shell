@@ -45,14 +45,14 @@ class TestPending:
 
 
 class TestRenderContext:
-    def test_includes_message_and_ack_instructions(self, tmp_path: Path) -> None:
+    def test_includes_message(self) -> None:
         reg = [{"id": "x", "message": "BIG NEWS"}]
-        ctx = render_context(reg, tmp_path)
+        ctx = render_context(reg)
         assert "BIG NEWS" in ctx
-        # Must instruct the agent to confirm acknowledgment and mark it done.
-        assert "AskUserQuestion" in ctx
-        assert "touch" in ctx
-        assert str(_ack_path("x", tmp_path)) in ctx
+        # Ack is handled by the hook itself -- no touch instruction needed.
+        assert "touch" not in ctx
+        # Must instruct display-only, not interactive acknowledgment.
+        assert "text output" in ctx
 
-    def test_empty_pending_returns_empty_string(self, tmp_path: Path) -> None:
-        assert render_context([], tmp_path) == ""
+    def test_empty_pending_returns_empty_string(self) -> None:
+        assert render_context([]) == ""

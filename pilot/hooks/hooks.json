@@ -111,6 +111,15 @@
     ],
     "PreToolUse": [
       {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project python \"$HOME/.pilot/hooks/plan_mode_tracker.py\""
+          }
+        ]
+      },
+      {
         "matcher": "Bash|WebSearch|WebFetch|Grep|Glob|Agent",
         "hooks": [
           {
@@ -130,6 +139,15 @@
       }
     ],
     "PostToolUse": [
+      {
+        "matcher": "EnterPlanMode|ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project python \"$HOME/.pilot/hooks/plan_mode_tracker.py\""
+          }
+        ]
+      },
       {
         "matcher": "Write|Edit|MultiEdit",
         "hooks": [

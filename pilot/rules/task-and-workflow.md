@@ -20,7 +20,9 @@ Default is quick mode (direct execution).
 | Trivial (single file, no active tasks) | Execute directly |
 | Any request while tasks exist | TaskCreate FIRST |
 | Moderate (2–5 files) | TaskCreate, then execute |
-| High (architectural, 10+ files) | **Ask** if user wants `/spec` or quick mode |
+| High (architectural, 20+ files, cross-cutting system change) | **Ask** if user wants `/spec` or quick mode |
+
+**⛔ Do NOT suggest `/spec` for:** bugfixes (use `/fix`), single-feature additions, refactors inside one module, CLI flag changes, config tweaks, dependency updates, test additions, or anything already scoped to a clear outcome. Reserve the suggestion for genuinely large, multi-system work where upfront planning materially reduces risk — when in doubt, execute in quick mode.
 
 ## Task Management
 
@@ -49,7 +51,9 @@ Default is quick mode (direct execution).
 | Trivial (single file, no active tasks) | Execute directly |
 | Any request while tasks exist | Update the current `update_plan` plan first |
 | Moderate (2–5 files) | Create or refresh an `update_plan` plan, then execute |
-| High (architectural, 10+ files) | **Ask** if user wants `$spec` or quick mode |
+| High (architectural, 20+ files, cross-cutting system change) | **Ask** if user wants `$spec` or quick mode |
+
+**⛔ Do NOT suggest `$spec` for:** bugfixes, single-feature additions, refactors inside one module, CLI flag changes, config tweaks, dependency updates, test additions, or anything already scoped to a clear outcome. Reserve the suggestion for genuinely large, multi-system work where upfront planning materially reduces risk — when in doubt, execute in quick mode.
 
 ## Task Management
 

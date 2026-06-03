@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 
 class TestMigrationV1:
-    """Migration v0 → v1: Update model routing from v7.0 to v7.1."""
+    """Migration v0 -> v1: Update model routing from v7.0 to v7.1."""
 
     def test_v1_unit_spec_verify_opus_to_sonnet(self) -> None:
         """v1 migrates commands.spec-verify from opus to sonnet (in-memory raw dict)."""
@@ -20,7 +20,7 @@ class TestMigrationV1:
         assert raw["commands"]["spec-plan"] == "opus"
 
     def test_v1_unit_spec_verify_sonnet_stays_sonnet(self) -> None:
-        """v1 leaves spec-verify=sonnet alone (v8 later handles the sonnet→opus default)."""
+        """v1 leaves spec-verify=sonnet alone (v8 later handles the sonnet->opus default)."""
         from installer.steps.config_migration import _migration_v1
 
         raw: dict = {"commands": {"spec-verify": "sonnet"}}
@@ -78,7 +78,7 @@ class TestMigrationV1:
 
 
 class TestMigrationV2:
-    """Migration v1 → v2: Switch sync and learn commands from sonnet to opus."""
+    """Migration v1 -> v2: Switch sync and learn commands from sonnet to opus."""
 
     def test_v2_unit_sync_and_learn_migrated_to_opus(self) -> None:
         """Both sync and learn skills are migrated from sonnet to opus."""
@@ -149,7 +149,7 @@ class TestMigrationIdempotency:
 
         Regression: previously the installer skipped migrations entirely when no
         config file existed, leaving fresh Max installs to fall through to the
-        legacy sonnet default for spec-implement/spec-verify — which doesn't work
+        legacy sonnet default for spec-implement/spec-verify - which doesn't work
         on Max plan because Max does not include sonnet 1M.
         """
         from installer.steps.config_migration import (
@@ -266,7 +266,7 @@ class TestMigrationPreservesExistingData:
 
 
 class TestMigrationV3:
-    """Migration v2 → v3: Disable plan review, spec review, and worktree support.
+    """Migration v2 -> v3: Disable plan review, spec review, and worktree support.
 
     Note: These tests use _configVersion: 2, so both v3 and v4 run.
     v3 disables, then v4 re-enables. Tests for v3 in isolation use
@@ -300,7 +300,7 @@ class TestMigrationV3:
         # v3 disables worktree, v4 re-enables reviewers but NOT worktree, v7 renames, v11 renames to branchIsolation
         assert migrated["reviewerAgents"]["specReview"] is True
         assert migrated["reviewerAgents"]["changesReview"] is True
-        # v4 no longer forces worktree back to True — respects whatever v3 set; v11 renamed worktreeSupport → branchIsolation
+        # v4 no longer forces worktree back to True - respects whatever v3 set; v11 renamed worktreeSupport -> branchIsolation
         assert migrated["specWorkflow"]["branchIsolation"] is False
         assert "worktreeSupport" not in migrated["specWorkflow"]
         assert migrated["specWorkflow"]["askQuestionsDuringPlanning"] is True
@@ -345,7 +345,7 @@ class TestMigrationV3:
         """askQuestionsDuringPlanning and planApproval are preserved through v3+v4.
 
         Note: worktreeSupport is intentionally omitted from this input so v11 is
-        a no-op for this test. The original intent is preserved — earlier-version
+        a no-op for this test. The original intent is preserved - earlier-version
         migrations must not clobber unrelated keys.
         """
         from installer.steps.config_migration import migrate_model_config
@@ -373,7 +373,7 @@ class TestMigrationV3:
 
 
 class TestMigrationV4:
-    """Migration v3 → v4: Enable reviewer subagents, preserve worktree user choice."""
+    """Migration v3 -> v4: Enable reviewer subagents, preserve worktree user choice."""
 
     def test_enables_reviewers_preserves_worktree(self, tmp_path: Path) -> None:
         """Reviewer agents are enabled but worktree is NOT force-enabled."""
@@ -399,10 +399,10 @@ class TestMigrationV4:
 
         assert result is True
         migrated = json.loads(config_path.read_text())
-        # v4 enables reviewers, then v7 renames keys, v11 renames worktreeSupport → branchIsolation
+        # v4 enables reviewers, then v7 renames keys, v11 renames worktreeSupport -> branchIsolation
         assert migrated["reviewerAgents"]["specReview"] is True
         assert migrated["reviewerAgents"]["changesReview"] is True
-        # v4 no longer forces worktree — user's False is preserved; v11 renamed key
+        # v4 no longer forces worktree - user's False is preserved; v11 renamed key
         assert migrated["specWorkflow"]["branchIsolation"] is False
         assert "worktreeSupport" not in migrated["specWorkflow"]
         assert migrated["specWorkflow"]["askQuestionsDuringPlanning"] is True
@@ -432,7 +432,7 @@ class TestMigrationV4:
 
         assert result is True
         migrated = json.loads(config_path.read_text())
-        # v7 renames keys, v11 renames worktreeSupport → branchIsolation
+        # v7 renames keys, v11 renames worktreeSupport -> branchIsolation
         assert migrated["reviewerAgents"]["specReview"] is True
         assert migrated["reviewerAgents"]["changesReview"] is True
         assert migrated["specWorkflow"]["branchIsolation"] is True
@@ -462,7 +462,7 @@ class TestMigrationV4:
 
         assert result is True
         migrated = json.loads(config_path.read_text())
-        # v4 enables both, then v7 renames, v11 renames worktreeSupport → branchIsolation
+        # v4 enables both, then v7 renames, v11 renames worktreeSupport -> branchIsolation
         assert migrated["reviewerAgents"]["specReview"] is True
         assert migrated["reviewerAgents"]["changesReview"] is True
         assert migrated["specWorkflow"]["branchIsolation"] is True
@@ -510,7 +510,7 @@ class TestMigrationV4:
 
         assert result is True
         migrated = json.loads(config_path.read_text())
-        # v11 renamed worktreeSupport → branchIsolation
+        # v11 renamed worktreeSupport -> branchIsolation
         assert migrated["specWorkflow"]["branchIsolation"] is False
         assert "worktreeSupport" not in migrated["specWorkflow"]
         assert migrated["specWorkflow"]["askQuestionsDuringPlanning"] is True
@@ -520,7 +520,7 @@ class TestMigrationV4:
         """askQuestionsDuringPlanning and planApproval are preserved.
 
         Note: worktreeSupport is intentionally omitted from this input so v11 is
-        a no-op for this test. The original intent is preserved — v4's migration
+        a no-op for this test. The original intent is preserved - v4's migration
         must not clobber unrelated keys.
         """
         from installer.steps.config_migration import migrate_model_config
@@ -548,7 +548,7 @@ class TestMigrationV4:
 
 
 class TestMigrationV5:
-    """Migration v4 → v5: Enable extended context (1M) by default."""
+    """Migration v4 -> v5: Enable extended context (1M) by default."""
 
     def test_full_chain_from_v4_lands_at_current_version_with_v12_post_state(self, tmp_path: Path) -> None:
         """End-to-end chain from v4 through v12: legacy model/extendedContext keys are pruned."""
@@ -593,7 +593,7 @@ class TestMigrationV5:
 
 
 class TestMigrationV6:
-    """Migration v5 → v6: Disable reviewer sub-agents for non-Max users."""
+    """Migration v5 -> v6: Disable reviewer sub-agents for non-Max users."""
 
     def test_disables_agents_for_pro_users(self, tmp_path: Path) -> None:
         """Pro users get sub-agents disabled."""
@@ -752,10 +752,10 @@ class TestMigrationV6:
 
 
 class TestMigrationV7:
-    """Migration v6 → v7: Rename reviewer agents and add Codex reviewer config."""
+    """Migration v6 -> v7: Rename reviewer agents and add Codex reviewer config."""
 
     def test_renames_reviewer_agent_keys(self) -> None:
-        """planReviewer → specReview, specReviewer → changesReview."""
+        """planReviewer -> specReview, specReviewer -> changesReview."""
         from installer.steps.config_migration import _migration_v7
 
         raw: dict = {
@@ -771,7 +771,7 @@ class TestMigrationV7:
         assert "specReviewer" not in raw["reviewerAgents"]
 
     def test_renames_agent_model_keys(self) -> None:
-        """plan-reviewer → spec-review, spec-reviewer → changes-review."""
+        """plan-reviewer -> spec-review, spec-reviewer -> changes-review."""
         from installer.steps.config_migration import _migration_v7
 
         raw: dict = {
@@ -907,7 +907,7 @@ class TestGetSubscriptionType:
 
 
 class TestMigrationV8:
-    """Migration v7 → v8: Rename commands→skills and default all to opus."""
+    """Migration v7 -> v8: Rename commands->skills and default all to opus."""
 
     def test_v8_unit_commands_renamed_to_skills(self) -> None:
         """The 'commands' config key is renamed to 'skills' (direct call to _migration_v8)."""
@@ -971,7 +971,7 @@ class TestMigrationV8:
 
 
 class TestMigrationV9:
-    """Migration v8 → v9: Set spec-implement/spec-verify to sonnet for non-Max users."""
+    """Migration v8 -> v9: Set spec-implement/spec-verify to sonnet for non-Max users."""
 
     def test_sets_sonnet_for_pro_users(self) -> None:
         """Pro users get spec-implement and spec-verify set to sonnet."""
@@ -1192,7 +1192,7 @@ class TestMigrationV9:
 
 
 class TestMigrationV10:
-    """Migration v9 → v10: Issue #139 — strip alias [1m] from disk; preserve explicit-id [1m]."""
+    """Migration v9 -> v10: Issue #139 - strip alias [1m] from disk; preserve explicit-id [1m]."""
 
     def test_current_version_is_at_least_10(self) -> None:
         from installer.steps.config_migration import CURRENT_CONFIG_VERSION
@@ -1264,7 +1264,7 @@ class TestMigrationV10:
 
     def test_full_migration_strips_legacy_1m_runs_through_to_v12(self, tmp_path: Path) -> None:
         """End-to-end: a v9 config with legacy alias [1m] runs through v10 (strip [1m])
-        and v12 (prune dead model keys) — final state has no model/skills keys."""
+        and v12 (prune dead model keys) - final state has no model/skills keys."""
         from installer.steps.config_migration import CURRENT_CONFIG_VERSION, migrate_model_config
 
         config_path = tmp_path / "config.json"
@@ -1298,7 +1298,7 @@ class TestMigrationV10:
         """Re-running migrate on a fully-migrated config is a no-op.
 
         After v11, a config at version 10 with no legacy `worktreeSupport` key
-        and no `branchIsolation` change still gets bumped to v11 — but only
+        and no `branchIsolation` change still gets bumped to v11 - but only
         because the version sentinel is stale, not because the data needs
         rewriting. To keep the test's "data unchanged" intent, mark the input
         as already at CURRENT_CONFIG_VERSION.
@@ -1315,7 +1315,7 @@ class TestMigrationV10:
 
 
 class TestMigrationV11:
-    """Migration v10 → v11: Rename specWorkflow.worktreeSupport → branchIsolation."""
+    """Migration v10 -> v11: Rename specWorkflow.worktreeSupport -> branchIsolation."""
 
     def test_current_version_is_at_least_11(self) -> None:
         from installer.steps.config_migration import CURRENT_CONFIG_VERSION
@@ -1387,7 +1387,7 @@ class TestMigrationV11:
         assert raw["specWorkflow"]["planApproval"] is False
 
     def test_v11_both_keys_present_branchIsolation_wins(self) -> None:
-        """If branchIsolation is already set, keep it — clean up legacy key only."""
+        """If branchIsolation is already set, keep it - clean up legacy key only."""
         from installer.steps.config_migration import _migration_v11
 
         raw: dict = {
@@ -1445,7 +1445,7 @@ class TestMigrationV11:
 
 
 class TestMigrationV12:
-    """Migration v11 → v12: Strip dead model keys, seed specWorkflow.modelSwitch, write .bak.v11 once."""
+    """Migration v11 -> v12: Strip dead model keys, seed specWorkflow.modelSwitch, write .bak.v11 once."""
 
     def test_v12_strips_dead_model_keys_and_seeds_model_switch(self, tmp_path: Path) -> None:
         from installer.steps.config_migration import migrate_model_config
@@ -1474,7 +1474,8 @@ class TestMigrationV12:
 
         assert result is True
         migrated = json.loads(config_path.read_text())
-        assert migrated["_configVersion"] == 13
+        from installer.steps.config_migration import CURRENT_CONFIG_VERSION as _CCV2
+        assert migrated["_configVersion"] == _CCV2
         for dead in ("model", "skills", "agents", "extendedContext", "extendedContextOverrides"):
             assert dead not in migrated, f"{dead} should have been pruned"
         assert migrated["specWorkflow"]["modelSwitch"] is True
@@ -1517,9 +1518,9 @@ class TestMigrationV12:
         assert first_backup == second_backup
         assert json.loads(first_backup) == original
 
-    def test_v12_config_migrates_forward_to_v13(self, tmp_path: Path) -> None:
-        """A config already at v12 still advances to v13 (force-on + version bump)."""
-        from installer.steps.config_migration import migrate_model_config
+    def test_v12_config_migrates_forward_to_current(self, tmp_path: Path) -> None:
+        """A config already at v12 still advances to the current version."""
+        from installer.steps.config_migration import CURRENT_CONFIG_VERSION, migrate_model_config
 
         config_path = tmp_path / "config.json"
         config_path.write_text(
@@ -1534,7 +1535,7 @@ class TestMigrationV12:
         result = migrate_model_config(config_path)
         assert result is True
         migrated = json.loads(config_path.read_text())
-        assert migrated["_configVersion"] == 13
+        assert migrated["_configVersion"] == CURRENT_CONFIG_VERSION
         assert migrated["specWorkflow"]["modelSwitch"] is True
 
     def test_v12_seeds_model_switch_when_specworkflow_missing(self, tmp_path: Path) -> None:
@@ -1559,10 +1560,10 @@ class TestMigrationV12:
 class TestMigrationV13:
     """Migration v12 -> v13: force-enable automated model switching + strip dead isolated-impl keys."""
 
-    def test_current_version_is_13(self) -> None:
+    def test_current_version_is_at_least_13(self) -> None:
         from installer.steps.config_migration import CURRENT_CONFIG_VERSION
 
-        assert CURRENT_CONFIG_VERSION == 13
+        assert CURRENT_CONFIG_VERSION >= 13
 
     def test_v13_force_enables_model_switch_when_false(self) -> None:
         """v13 overrides an explicit modelSwitch=false -> true (one-time force-on)."""
@@ -1649,11 +1650,13 @@ class TestMigrationV13:
 
         assert result is True
         migrated = json.loads(config_path.read_text())
-        assert migrated["_configVersion"] == 13
+        from installer.steps.config_migration import CURRENT_CONFIG_VERSION as _CCV
+        assert migrated["_configVersion"] == _CCV
         assert migrated["specWorkflow"]["modelSwitch"] is True
 
-    def test_v13_idempotent_when_already_v13(self, tmp_path: Path) -> None:
-        from installer.steps.config_migration import migrate_model_config
+    def test_v13_advances_to_v14_when_context_windows_absent(self, tmp_path: Path) -> None:
+        """A config at v13 advances to v14 (contextWindows gets seeded)."""
+        from installer.steps.config_migration import CURRENT_CONFIG_VERSION, migrate_model_config
 
         config_path = tmp_path / "config.json"
         config_path.write_text(
@@ -1661,6 +1664,78 @@ class TestMigrationV13:
                 {
                     "_configVersion": 13,
                     "specWorkflow": {"modelSwitch": True, "branchIsolation": True},
+                }
+            )
+        )
+
+        result = migrate_model_config(config_path)
+        assert result is True
+        migrated = json.loads(config_path.read_text())
+        assert migrated["_configVersion"] == CURRENT_CONFIG_VERSION
+        assert migrated["contextWindows"] == {"opus": "1m", "sonnet": "200k"}
+
+
+class TestMigrationV14:
+    """Migration v13 -> v14: seed contextWindows default {opus:1m, sonnet:200k}."""
+
+    def test_current_version_is_14(self) -> None:
+        from installer.steps.config_migration import CURRENT_CONFIG_VERSION
+
+        assert CURRENT_CONFIG_VERSION == 14
+
+    def test_v14_seeds_context_windows_when_absent(self) -> None:
+        from installer.steps.config_migration import _migration_v14
+
+        raw: dict = {}
+        modified = _migration_v14(raw)
+
+        assert modified is True
+        assert raw["contextWindows"] == {"opus": "1m", "sonnet": "200k"}
+
+    def test_v14_preserves_existing_context_windows(self) -> None:
+        from installer.steps.config_migration import _migration_v14
+
+        existing = {"opus": "200k", "sonnet": "200k"}
+        raw: dict = {"contextWindows": dict(existing)}
+        modified = _migration_v14(raw)
+
+        assert modified is False
+        assert raw["contextWindows"] == existing
+
+    def test_v14_seeds_when_context_windows_not_dict(self) -> None:
+        from installer.steps.config_migration import _migration_v14
+
+        raw: dict = {"contextWindows": "1m"}
+        modified = _migration_v14(raw)
+
+        assert modified is True
+        assert raw["contextWindows"] == {"opus": "1m", "sonnet": "200k"}
+
+    def test_full_migration_from_v13_seeds_context_windows_and_bumps_version(self, tmp_path: Path) -> None:
+        from installer.steps.config_migration import CURRENT_CONFIG_VERSION, migrate_model_config
+
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps({"_configVersion": 13, "specWorkflow": {"modelSwitch": True}})
+        )
+
+        result = migrate_model_config(config_path)
+
+        assert result is True
+        migrated = json.loads(config_path.read_text())
+        assert migrated["_configVersion"] == CURRENT_CONFIG_VERSION
+        assert migrated["contextWindows"] == {"opus": "1m", "sonnet": "200k"}
+
+    def test_v14_idempotent_when_already_v14(self, tmp_path: Path) -> None:
+        from installer.steps.config_migration import migrate_model_config
+
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "_configVersion": 14,
+                    "specWorkflow": {"modelSwitch": True},
+                    "contextWindows": {"opus": "200k", "sonnet": "200k"},
                 }
             )
         )

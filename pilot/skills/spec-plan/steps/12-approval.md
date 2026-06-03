@@ -58,7 +58,9 @@ CODEX-END -->
 ### 12.3 Model switch + implementation handoff (automated)
 
 <!-- CC-ONLY -->
-**If `PILOT_MODEL_SWITCH_ENABLED` is `"true"` (default):** switch back to Sonnet by calling `ExitPlanMode`, then invoke implementation in the same turn — no manual step, no sentinel, no message.
+**If `PILOT_MODEL_SWITCH_ENABLED` is `"true"` (default):**
+
+⛔ **`ExitPlanMode` MUST be the next tool call after approval. No exploration, no file reads, no Bash between approval and `ExitPlanMode`. Skipping it leaves the entire implementation leg running on Opus.**
 
 ```
 ToolSearch(query="select:ExitPlanMode")   # deferred tool — load first

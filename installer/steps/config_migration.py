@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-CURRENT_CONFIG_VERSION = 13
+CURRENT_CONFIG_VERSION = 14
 
 _STALE_AGENT_KEYS = frozenset(
     {
@@ -32,7 +32,7 @@ def migrate_model_config(
     """Run pending one-time migrations on ~/.pilot/config.json.
 
     Returns True if any migration was applied, False otherwise.
-    Safe to call repeatedly — already-applied migrations are skipped.
+    Safe to call repeatedly - already-applied migrations are skipped.
 
     `create_if_missing=True` (used by the installer at install time) treats
     a missing config as an empty one and runs all migrations against it so
@@ -72,7 +72,7 @@ def migrate_model_config(
             try:
                 _write_atomic(bak_path, raw)
             except OSError:
-                # Backup is best-effort — never fail the migration on disk errors.
+                # Backup is best-effort - never fail the migration on disk errors.
                 pass
 
     modified = False
@@ -116,6 +116,9 @@ def migrate_model_config(
     if version < 13:
         modified = _migration_v13(raw) or modified
 
+    if version < 14:
+        modified = _migration_v14(raw) or modified
+
     if raw.get("_configVersion") != CURRENT_CONFIG_VERSION:
         raw["_configVersion"] = CURRENT_CONFIG_VERSION
         modified = True
@@ -127,9 +130,9 @@ def migrate_model_config(
 
 
 def _migration_v1(raw: dict[str, Any]) -> bool:
-    """v0 → v1: Update model routing defaults from v7.0 to v7.1.
+    """v0 -> v1: Update model routing defaults from v7.0 to v7.1.
 
-    - spec-verify: opus → sonnet (new recommended default)
+    - spec-verify: opus -> sonnet (new recommended default)
     - Remove stale agent keys (plan-challenger, plan-verifier, etc.)
     - Ensure new agent keys exist (plan-reviewer, spec-reviewer)
     """
@@ -159,9 +162,9 @@ def _migration_v1(raw: dict[str, Any]) -> bool:
 
 
 def _migration_v2(raw: dict[str, Any]) -> bool:
-    """v1 → v2: Switch sync and learn commands from sonnet to opus.
+    """v1 -> v2: Switch sync and learn commands from sonnet to opus.
 
-    Both build rules/skills and only run periodically — best model, not a cost driver.
+    Both build rules/skills and only run periodically - best model, not a cost driver.
     """
     modified = False
 
@@ -178,11 +181,11 @@ def _migration_v2(raw: dict[str, Any]) -> bool:
 
 
 def _migration_v3(raw: dict[str, Any]) -> bool:
-    """v2 → v3: Disable plan review, spec review, and worktree support by default.
+    """v2 -> v3: Disable plan review, spec review, and worktree support by default.
 
     These features consume significant tokens (~50k for plan review, ~100k for
     spec review) as they run in separate context windows. Disable them for all
-    existing users — they can re-enable via Console Settings if desired.
+    existing users - they can re-enable via Console Settings if desired.
     """
     modified = False
 
@@ -219,12 +222,12 @@ def _migration_v3(raw: dict[str, Any]) -> bool:
 
 
 def _migration_v4(raw: dict[str, Any]) -> bool:
-    """v3 → v4: Enable reviewer subagents by default. Ensure specWorkflow exists.
+    """v3 -> v4: Enable reviewer subagents by default. Ensure specWorkflow exists.
 
     Originally also force-enabled worktreeSupport, but that overwrote explicit
     user preferences (if a user disabled worktree via Console Settings and their
     _configVersion was < 4, this migration would re-enable it). Worktree is now
-    left at whatever value the user set — only the specWorkflow dict structure
+    left at whatever value the user set - only the specWorkflow dict structure
     is ensured to exist.
     """
     modified = False
@@ -241,7 +244,7 @@ def _migration_v4(raw: dict[str, Any]) -> bool:
         raw["reviewerAgents"] = {"planReviewer": True, "specReviewer": True}
         modified = True
 
-    # Ensure specWorkflow dict exists, but do NOT override worktreeSupport —
+    # Ensure specWorkflow dict exists, but do NOT override worktreeSupport -
     # the user may have explicitly disabled it via Console Settings.
     spec_workflow = raw.get("specWorkflow")
     if not isinstance(spec_workflow, dict):
@@ -256,7 +259,7 @@ def _migration_v4(raw: dict[str, Any]) -> bool:
 
 
 def _migration_v5(raw: dict[str, Any]) -> bool:
-    """v4 → v5: Enable extended context (1M) by default.
+    """v4 -> v5: Enable extended context (1M) by default.
 
     1M context is now GA for Opus 4.7 and Sonnet 4.6. Set extendedContext
     to true for all users. Users who don't have 1M access can disable it
@@ -306,7 +309,7 @@ def _get_subscription_type() -> str | None:
 
 
 def _migration_v6(raw: dict[str, Any]) -> bool:
-    """v5 → v6: Disable reviewer sub-agents for non-Max users.
+    """v5 -> v6: Disable reviewer sub-agents for non-Max users.
 
     Sub-agents (plan-reviewer, spec-reviewer) consume ~150k extra tokens per
     /spec run. Disable them for Pro, Team, and Enterprise users to reduce
@@ -341,10 +344,10 @@ def _migration_v6(raw: dict[str, Any]) -> bool:
 
 
 def _migration_v7(raw: dict[str, Any]) -> bool:
-    """v6 → v7: Rename reviewer agents and add Codex reviewer config.
+    """v6 -> v7: Rename reviewer agents and add Codex reviewer config.
 
-    - reviewerAgents: planReviewer → specReview, specReviewer → changesReview
-    - agents: plan-reviewer → spec-review, spec-reviewer → changes-review
+    - reviewerAgents: planReviewer -> specReview, specReviewer -> changesReview
+    - agents: plan-reviewer -> spec-review, spec-reviewer -> changes-review
     - Add codexReviewers section with defaults (both disabled)
     """
     modified = False
@@ -375,13 +378,13 @@ def _migration_v7(raw: dict[str, Any]) -> bool:
 
 
 def _migration_v8(raw: dict[str, Any]) -> bool:
-    """v7 → v8: Rename "commands" → "skills" and default all skill models to opus.
+    """v7 -> v8: Rename "commands" -> "skills" and default all skill models to opus.
 
     - Renames the config key from "commands" to "skills" for consistency
       with the new skill-based architecture.
     - Sets all skill models to opus (previously spec, spec-implement, and
       spec-verify defaulted to sonnet). Users who explicitly changed a model
-      to sonnet keep their choice — only the old defaults are migrated.
+      to sonnet keep their choice - only the old defaults are migrated.
     - Ensures extendedContext is true for 1M context.
     """
     modified = False
@@ -405,14 +408,14 @@ def _migration_v8(raw: dict[str, Any]) -> bool:
 
 
 def _migration_v9(raw: dict[str, Any]) -> bool:
-    """v8 → v9: Set spec-implement and spec-verify to sonnet for non-Max users.
+    """v8 -> v9: Set spec-implement and spec-verify to sonnet for non-Max users.
 
     Sonnet 1M is not included in the Max plan, so Max users need Opus for
     1M context. All other tiers (Pro, Team, Enterprise, API) get Sonnet 1M
     included, so sonnet is the better default (cheaper).
 
     If subscription type can't be detected, leave settings unchanged (safe
-    opus fallback). This migration runs once — after it, users control
+    opus fallback). This migration runs once - after it, users control
     their own settings via Console Settings.
     """
     sub_type = _get_subscription_type()
@@ -444,13 +447,13 @@ _ALIAS_NAMES = ("opus", "sonnet")
 
 
 def _migration_v10(raw: dict[str, Any]) -> bool:
-    """v9 → v10: Strip alias [1m] suffix from `model` and `skills.<key>`.
+    """v9 -> v10: Strip alias [1m] suffix from `model` and `skills.<key>`.
 
     Issue #139: per-phase 1M context routes alias 1M through the
     `extendedContextOverrides` map, not the model literal. Legacy configs may
     contain `model: "opus[1m]"` or `skills.<key>: "sonnet[1m]"` from earlier
     versions. Normalize them to plain aliases. Explicit-ID `[1m]`
-    (e.g. `claude-opus-4-8[1m]`) is preserved verbatim — Custom users encode
+    (e.g. `claude-opus-4-8[1m]`) is preserved verbatim - Custom users encode
     their context window in the ID itself. Agents are not touched (no
     historical [1m] usage; out of scope for this issue).
     """
@@ -483,14 +486,14 @@ def _migration_v10(raw: dict[str, Any]) -> bool:
 
 
 def _migration_v11(raw: dict[str, Any]) -> bool:
-    """v10 → v11: Rename specWorkflow.worktreeSupport → branchIsolation.
+    """v10 -> v11: Rename specWorkflow.worktreeSupport -> branchIsolation.
 
     The toggle's semantics expanded: it now gates BOTH new-branch creation
     and worktree creation. Existing users keep their on/off preference;
     the legacy key is removed so config.json reflects the new name.
 
     Both-keys-present case: if branchIsolation is already set, the user's
-    most-recent explicit write wins — keep it, just clean up worktreeSupport.
+    most-recent explicit write wins - keep it, just clean up worktreeSupport.
     """
     spec_workflow = raw.get("specWorkflow")
     if not isinstance(spec_workflow, dict):
@@ -505,10 +508,10 @@ def _migration_v11(raw: dict[str, Any]) -> bool:
 
 
 def _migration_v12(raw: dict[str, Any]) -> bool:
-    """v11 → v12: Strip dead model keys; seed specWorkflow.modelSwitch=true.
+    """v11 -> v12: Strip dead model keys; seed specWorkflow.modelSwitch=true.
 
     After this migration, model selection is controlled entirely via Claude
-    Code's `/model` slash command — `~/.pilot/config.json` no longer stores
+    Code's `/model` slash command - `~/.pilot/config.json` no longer stores
     main / per-skill / per-agent model preferences, the 1M extended-context
     toggle, or per-row overrides. The launcher's settings injector stops
     rewriting `model:` lines in skill / agent frontmatter; the source files
@@ -516,8 +519,8 @@ def _migration_v12(raw: dict[str, Any]) -> bool:
 
     `specWorkflow.modelSwitch` is the new opt-out toggle: when true (default)
     the spec-plan skill ends its turn with a handoff message after approval
-    so the user can `/clear` + `/model <…>` before implementation; when false
-    the spec workflow continues plan → implement → verify in one session on
+    so the user can `/clear` + `/model <...>` before implementation; when false
+    the spec workflow continues plan -> implement -> verify in one session on
     whichever model is active.
 
     The caller writes `~/.pilot/config.json.bak.v11` (single-file safety
@@ -576,6 +579,23 @@ def _migration_v13(raw: dict[str, Any]) -> bool:
         modified = True
 
     return modified
+
+
+def _migration_v14(raw: dict[str, Any]) -> bool:
+    """v13 -> v14: seed contextWindows default {opus: 1m, sonnet: 200k}.
+
+    Makes the safe Sonnet-200K default explicit in every config.json so the
+    write_env_vars_to_claude_settings() writer emits the correct model IDs on
+    the next `pilot sync-env` / startup, fixing the issue #160 regression for
+    users who never open Console Settings.
+
+    Rule: absent or non-dict -> seed with defaults; present dict -> leave
+    untouched (respect the user's explicit choice from Console Settings).
+    """
+    if not isinstance(raw.get("contextWindows"), dict):
+        raw["contextWindows"] = {"opus": "1m", "sonnet": "200k"}
+        return True
+    return False
 
 
 def _write_atomic(path: Path, data: dict[str, Any]) -> None:

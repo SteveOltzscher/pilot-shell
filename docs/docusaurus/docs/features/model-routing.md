@@ -1,23 +1,23 @@
 ---
 sidebar_position: 5
 title: Model Routing
-description: Plan with Opus, implement with Sonnet — automatically, no manual switch.
+description: Plan with Opus, implement with Sonnet - automatically, no manual switch.
 ---
 
 # Model Routing
 
 :::warning Claude Code only
-Automated model switching is a Claude Code feature. It is not available in Codex CLI — on Codex, set the model via `codex --model <name>` or in `~/.codex/config.toml`, and `/spec` runs on whatever model is active.
+Automated model switching is a Claude Code feature. It is not available in Codex CLI -- on Codex, set the model via `codex --model <name>` or in `~/.codex/config.toml`, and `/spec` runs on whatever model is active.
 :::
 
-Opus reasons better; Sonnet is faster and cheaper. The cost-saving move is to plan on Opus, then drop to Sonnet for the mechanical implementation and verification that follow. Pilot does this **automatically** during `/spec` — no manual `/model` step.
+Opus reasons better; Sonnet is faster and cheaper. The cost-saving move is to plan on Opus, then drop to Sonnet for the mechanical implementation and verification that follow. Pilot does this **automatically** during `/spec` -- no manual `/model` step.
 
 ## How It Works
 
 Pilot relies on Claude Code's **Opus Plan** model (`opusplan`): Opus while in plan mode, Sonnet otherwise. With **Model Switching** ON (the default), `/spec`:
 
-1. Calls **EnterPlanMode** at the start of planning → you're on **Opus** for the reasoning-heavy planning leg.
-2. After you approve the plan, calls **ExitPlanMode** → you drop to **Sonnet** automatically.
+1. Calls **EnterPlanMode** at the start of planning -> you're on **Opus** for the reasoning-heavy planning leg.
+2. After you approve the plan, calls **ExitPlanMode** -> you drop to **Sonnet** automatically.
 3. Runs implementation and verification on **Sonnet**, continuously, in the same session.
 
 There is no pause, no handoff message, and no `/clear` + re-invoke. You approve the plan and implementation begins.
@@ -34,15 +34,59 @@ Pilot writes this into `~/.claude/settings.json` during install and whenever Con
 
 `/spec` checks your model before planning and behaves differently per model:
 
-- **On a wrong, identifiable model** (e.g. plain **Opus**): `/spec` **hard-blocks** and tells you to run `/model opusplan`. Before plan mode, `opusplan` resolves to Sonnet — so being on Opus means you never switched.
+- **On a wrong, identifiable model** (e.g. plain **Opus**): `/spec` **hard-blocks** and tells you to run `/model opusplan`. Before plan mode, `opusplan` resolves to Sonnet -- so being on Opus means you never switched.
 - **On Sonnet**: allowed. Pilot can't tell `opusplan`'s Sonnet leg from plain Sonnet, so it presumes you're correct rather than false-block every valid user.
 
 With **Model Switching OFF**, the check flips: `/spec` requires **Opus** (only Opus may enter plan mode) and hard-blocks any other model. Resuming an existing plan (`/spec <path/to/plan.md>`) skips the check on any model.
 
-## Turning It Off — Opus Everywhere
+## Quick Mode (Outside /spec) -- Default is Sonnet
 
-Turn off **Model Switching** in Console Settings → Automation to run the entire `/spec` workflow on Opus. Pilot then patches `~/.claude/settings.json` to `opus[1m]` and never enters plan mode for model switching — plan → implement → verify all run on Opus. Choose this if you prefer maximum reasoning quality over cost, or for headless / CI runs.
+`opusplan` resolves to **Sonnet** whenever you are *not* in plan mode. This means regular quick-mode prompts -- everything outside `/spec` and `/fix` planning -- run on Sonnet, not Opus.
+
+This is by design: the model exists specifically to power the planning leg of the spec workflow, not to make Opus the default for all interactions.
+
+**If you want Opus for a quick-mode task**, switch manually:
+
+```text
+/model opus[1m]
+```
+
+Switch back to `opusplan` before the next `/spec` run:
+
+```text
+/model opusplan
+```
+
+:::tip Summary
+- `opusplan` on = `/spec` and `/fix` plan on Opus, everything else on Sonnet.
+- For ad-hoc Opus work outside those workflows, switch to `opus[1m]` for that session.
+:::
+
+## Turning It Off -- Opus Everywhere
+
+Turn off **Model Switching** in Console Settings -> Automation to run the entire `/spec` workflow on Opus. Pilot then patches `~/.claude/settings.json` to `opus[1m]` (when Opus context window is 1M) or `opus` (200K) and never enters plan mode for model switching -- plan -> implement -> verify all run on Opus. Choose this if you prefer maximum reasoning quality over cost, or for headless / CI runs.
+
+## Context Window
+
+Each model can run with a **1M** or **200K** context window, independently:
+
+| Model | Default | Notes |
+|-------|---------|-------|
+| **Opus** | 1M | Safe for all Claude Code subscription tiers. |
+| **Sonnet** | 200K | Safe default. Sonnet 1M requires API, Team, or Enterprise; on Max it works for some accounts but not all. |
+
+Pilot manages three env vars in `~/.claude/settings.json` based on your choice:
+
+- `ANTHROPIC_DEFAULT_OPUS_MODEL` -- `claude-opus-4-8[1m]` (1M) or `claude-opus-4-8` (200K)
+- `ANTHROPIC_DEFAULT_SONNET_MODEL` -- `claude-sonnet-4-6[1m]` (1M) or `claude-sonnet-4-6` (200K)
+- `CLAUDE_CODE_DISABLE_1M_CONTEXT` -- `true` only when **both** models are set to 200K
+
+**To change the context window:** Console Settings -> Automation -> Context Window. Click Save -- the change propagates immediately via `pilot sync-env`.
+
+**If a session errors with "model not available":** lower that model's context window to 200K in Console Settings.
+
+**Sub-agents** (`spec-review`, `changes-review`, `web-search-agent`) always run on Sonnet and do not support 1M context regardless of this setting.
 
 ## Default-On
 
-Automated model switching is **ON for every install** (a one-time migration enables it for existing users too). The first time you launch after upgrading, Pilot shows a one-time announcement explaining the change and how to disable it. Reviewer sub-agents (`spec-review`, `changes-review`) always run on Sonnet — sub-agents do not support the 1M context window.
+Automated model switching is **ON for every install** (a one-time migration enables it for existing users too). The first time you launch after upgrading, Pilot shows a one-time announcement explaining the change and how to disable it. Reviewer sub-agents (`spec-review`, `changes-review`) always run on Sonnet -- sub-agents do not support the 1M context window.
