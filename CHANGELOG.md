@@ -2,6 +2,16 @@
 
 All notable changes to Pilot Shell will be documented in this file.
 
+## [9.5.0] - 2026-06-12
+
+### Bug Fixes
+
+- Remove process-global fs mocks from console tests, add pre-commit mock-hygiene and knip gates
+
+### Features
+
+- Replace changes-review subagent with built-in /code-review skill on Claude Code
+
 ## [9.4.0] - 2026-06-09
 
 ### Features
