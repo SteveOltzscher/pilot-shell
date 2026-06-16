@@ -16,6 +16,7 @@ dotnet build                                         # build
 dotnet run --project src/MyApp                       # run
 dotnet test -v q                                     # quiet (preferred); AVOID -v d/diag unless debugging
 dotnet test --filter "Category=Unit"                 # run a single category
+dotnet test -- RunConfiguration.MaxCpuCount=1        # run the FULL suite single-core — avoids CI/CD parallelism flukes
 dotnet format                                        # format
 dotnet format --verify-no-changes                    # format check (CI)
 dotnet add package <Name>                            # add a dependency (never hand-edit version pins blindly)
