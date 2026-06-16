@@ -2,6 +2,12 @@
 
 All notable changes to Pilot Shell will be documented in this file.
 
+## [9.5.1] - 2026-06-16
+
+### Bug Fixes
+
+- Add configurable code-review effort setting
+
 ## [9.5.0] - 2026-06-12
 
 ### Bug Fixes
