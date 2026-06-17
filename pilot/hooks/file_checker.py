@@ -26,6 +26,7 @@ from _checkers.tdd import (
     has_test_importing_module_dotnet,
     has_typescript_test_file,
     is_dotnet_logic_free,
+    is_inside_dotnet_test_project,
     is_test_file,
     is_trivial_edit,
     should_skip,
@@ -70,6 +71,10 @@ def _tdd_check(tool_name: str, tool_input: dict, file_path: str) -> str:
         return f"TDD Reminder: No test file found\n    Consider creating {base_name}_test.go first."
 
     if file_path.endswith((".cs", ".razor")):
+        # A file inside a .NET test project (MyApp.Tests, IntegrationTests, ...) is
+        # itself test code - skip, matching check_dotnet's format-path behaviour.
+        if is_inside_dotnet_test_project(file_path):
+            return ""
         if has_dotnet_test_file(file_path):
             return ""
         if has_test_importing_module_dotnet(file_path):

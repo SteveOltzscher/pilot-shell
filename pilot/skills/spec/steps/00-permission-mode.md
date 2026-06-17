@@ -15,7 +15,7 @@ echo "MODEL_SWITCH=${PILOT_MODEL_SWITCH_ENABLED:-true}"
 
 - **If `MODEL_SWITCH` is `true` (default):**
 
-  > ℹ️ Automated model switching is ON — planning runs on **Opus**, implementation & verification on **Sonnet**, automatically. This requires the **Opus Plan** model: if your status bar isn't already on it, run `/model opusplan` now (future sessions set this automatically). On **Fable 5** (`/model fable`), ignore the opusplan reminder — `/spec` runs the whole workflow on Fable; model switching does not apply (there is no `fableplan`). Prefer Opus for everything? Disable **Model Switching** in the Pilot Console → Settings → Automation.
+  > ℹ️ Automated model switching is ON — planning runs on **Opus**, implementation & verification on **Sonnet**, automatically. This requires the **Opus Plan** model: if your status bar isn't already on it, run `/model opusplan` now (or `/model opusplan[1m]` if you enabled the 1M Context Window; future sessions set this automatically). The `[1m]` suffix is what forces 1M — bare `opusplan` runs plan-mode Opus at 200K (and on Max, 1M needs usage credits). On **Fable 5** (`/model fable`), ignore the opusplan reminder — `/spec` runs the whole workflow on Fable; model switching does not apply (there is no `fableplan`). Prefer Opus for everything? Disable **Model Switching** in the Pilot Console → Settings → Automation.
 
 - **If `MODEL_SWITCH` is `false`:**
 

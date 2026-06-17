@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-CURRENT_CONFIG_VERSION = 15
+CURRENT_CONFIG_VERSION = 16
 
 _STALE_AGENT_KEYS = frozenset(
     {
@@ -121,6 +121,9 @@ def migrate_model_config(
 
     if version < 15:
         modified = _migration_v15(raw) or modified
+
+    if version < 16:
+        modified = _migration_v16(raw) or modified
 
     if raw.get("_configVersion") != CURRENT_CONFIG_VERSION:
         raw["_configVersion"] = CURRENT_CONFIG_VERSION
@@ -616,6 +619,35 @@ def _migration_v15(raw: dict[str, Any]) -> bool:
         raw["codeReview"] = {"effort": "xhigh"}
         return True
     return False
+
+
+def _migration_v16(raw: dict[str, Any]) -> bool:
+    """v15 -> v16: collapse the per-model ``contextWindows`` object into a single
+    ``contextWindow`` string, defaulting to the safe 200K.
+
+    The redesign replaced ``contextWindows: {opus, sonnet}`` with one
+    ``contextWindow`` ("1m" | "200k") that rides on the opusplan alias's ``[1m]``
+    suffix (ON -> ``opusplan[1m]`` / ``opusplan``; OFF -> bare ``opus``, user-managed).
+
+    We deliberately do NOT carry an old ``contextWindows.opus == "1m"`` forward:
+    ``_migration_v14`` seeded ``opus=1m`` into EVERY config, so that value is almost
+    never a deliberate choice, and 1M context errors on Max without usage credits
+    (``Usage credits required for 1M context``). Reset to the safe 200K default;
+    users re-opt into 1M via Console Settings, which now warns about the credit
+    requirement.
+
+    Rule: drop any legacy ``contextWindows`` key; seed ``contextWindow`` = "200k"
+    when absent/invalid. A valid ``contextWindow`` from a newer Console build is
+    left untouched.
+    """
+    changed = False
+    if "contextWindows" in raw:
+        del raw["contextWindows"]
+        changed = True
+    if raw.get("contextWindow") not in ("1m", "200k"):
+        raw["contextWindow"] = "200k"
+        changed = True
+    return changed
 
 
 def _write_atomic(path: Path, data: dict[str, Any]) -> None:

@@ -13,6 +13,17 @@ echo "CODEX_REVIEW=$PILOT_CODEX_CHANGES_REVIEW_ENABLED"      # Codex companion r
 
 **If BOTH are `"false"` or unset → skip this sub-step entirely and proceed to 6.2.**
 
+#### 6.1.pre Stage the bugfix files (always run when any reviewer is enabled, before launching it)
+
+The fix and its new test sit UNSTAGED in the working tree — and a brand-new test file is untracked. A pre-commit review of that unstaged tree misfires both ways: a reviewer that reads `git status --untracked-files=all` flags the new test as a spurious `critical` ("untracked deliverable"), while a reviewer that reads only `git diff HEAD` silently OMITS it, so the test goes unreviewed. Stage the change's own files with a **real `git add`** (NOT `git add -N`) before launching any reviewer below:
+
+```bash
+git add <fix_file> <test_file>   # only the bugfix's own files — never unrelated dirty paths
+git status --short --untracked-files=all | grep '^??' || true   # should list only files NOT part of this fix
+```
+
+Staging is not committing — the commit (6.2) still waits for the review and the approval gate. All reviewers scope to `git diff HEAD` (which now includes the staged additions); never narrow to a committed ref-range, which is empty pre-commit.
+
 <!-- CC-ONLY -->
 #### 6.1.0 Shared bugfix summary (Codex companion only)
 
@@ -89,23 +100,36 @@ CODEX_FLAG="$SESS_DIR/codex-changes-review-ran-fix.flag"
      || { echo "Codex launch did not register with broker (synthetic task id?). Skipping Codex this run."; JOB_ID=""; }
    ```
 
-   If `$JOB_ID` is empty, skip the Codex part of 6.1.c. Otherwise poll for completion:
+   If `$JOB_ID` is empty, skip the Codex part of 6.1.c. Otherwise run the **active stall monitor** — broker `status` alone is not a liveness signal (a silent job keeps reporting `running`/`verifying` and a status-only loop burns its whole timeout). It watches `job.logFile` mtime and returns the moment the job finishes OR stalls:
 
    ```bash
-   for i in $(seq 1 150); do
-     STATE=$(node "$CODEX_COMPANION" status "$JOB_ID" --json 2>/dev/null \
+   STALL=90; CEILING=480   # seconds: max no-log-growth, then absolute ceiling
+   LOGF=$(node "$CODEX_COMPANION" status "$JOB_ID" --json 2>/dev/null \
+     | uv run --no-project --python python3 python -c "import json,sys
+try: print((json.load(sys.stdin).get('job') or {}).get('logFile') or '')
+except Exception: print('')")
+   last_change=$(date +%s); last_mtime=0; start=$(date +%s)
+   while :; do
+     PSTATE=$(node "$CODEX_COMPANION" status "$JOB_ID" --json 2>/dev/null \
        | uv run --no-project --python python3 python -c "import json,sys
 try: print((json.load(sys.stdin).get('job') or {}).get('status') or 'unknown')
-except Exception: print('parse_error')" 2>/dev/null)
-     case "$STATE" in
-       completed)        echo "READY @ iter=$i"; break ;;
-       failed|parse_error|unknown) echo "FAIL state=$STATE iter=$i"; break ;;
+except Exception: print('parse_error')")
+     case "$PSTATE" in
+       completed)                            echo "READY elapsed=$(($(date +%s)-start))s"; break ;;
+       failed|cancelled|parse_error|unknown) echo "FAIL state=$PSTATE"; break ;;
      esac
-     sleep 4
+     now=$(date +%s)
+     m=$( { [ -n "$LOGF" ] && stat -f %m "$LOGF" 2>/dev/null; } || { [ -n "$LOGF" ] && stat -c %Y "$LOGF" 2>/dev/null; } || echo 0 )
+     [ "$m" -gt "$last_mtime" ] && { last_mtime=$m; last_change=$now; }
+     [ $((now - last_change)) -ge "$STALL" ]   && { echo "STALLED no_log_growth=$((now-last_change))s"; break; }
+     [ $((now - start))       -ge "$CEILING" ] && { echo "CEILING elapsed=$((now-start))s"; break; }
+     sleep 15
    done
    ```
 
-   Run the poll loop as `Bash(run_in_background=true, timeout=600000)`. Treat `parse_error` / `unknown` as failure (the job vanished or the broker is unreachable). ⛔ **Wait for the completion notification** — do NOT read the result file before the `<task-notification>` with `<status>completed</status>` arrives. The inline review below runs while Codex churns.
+   Run the monitor as `Bash(run_in_background=true, timeout=600000)` (background so `sleep` is allowed; the CEILING exits before the bash timeout). Use `PSTATE`, never a variable named `status` (read-only in zsh). If `LOGF` came back empty, the monitor degrades to status + CEILING only. ⛔ **Wait for the completion notification** — do NOT read the result file before the `<task-notification>` arrives. The inline review (6.1.b) runs while Codex churns.
+
+   **Outcome handling.** `READY` → fetch the result in 6.1.c. `FAIL` → treat as a failed run (6.1.d launch-failure handling). `STALLED`/`CEILING` → the job went silent: cancel it (`node "$CODEX_COMPANION" cancel "$JOB_ID" --json 2>/dev/null || true`) and re-launch ONCE under the same monitor; if it stalls again, do NOT spin a third time and do NOT silently skip — proceed without the Codex pass, note the gap in the 6.6 report, and rely on the inline `/code-review` results.
 
 #### 6.1.b Inline /code-review (only when `PILOT_CHANGES_REVIEW_ENABLED == "true"`)
 

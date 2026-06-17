@@ -47,25 +47,44 @@ Rank order is the tiebreaker within a class. For each fix: implement → run rel
 
 **⛔ If the notification hasn't arrived yet:** STOP. Do NOT proceed to Phase B, do NOT say "still running, moving on", do NOT read the output file, do NOT conclude the review failed. Wait for the `<task-notification>` with `<status>completed</status>`. If you are tempted to check the file — that is the exact mistake this rule prevents.
 
-**Wait for completion via bash polling**, NOT by reading the state file directly. The polling bash returns when the `task` job's status flips to `completed` or `failed`, triggering the completion notification.
+**Wait for completion via the active stall monitor** (NOT a status-only poll, and NOT by reading the state file directly). Broker `status` alone is not a liveness signal — a silent job keeps reporting `running`/`verifying` and a status-only loop burns its whole timeout before noticing. The monitor watches `job.logFile` mtime as the liveness source and returns the moment the job finishes OR stalls, triggering the completion notification.
 
 ```bash
 JOB_ID="<captured-task-id from Step 1>"
-for i in $(seq 1 250); do
-  STATE=$(node "$CODEX_COMPANION" status "$JOB_ID" --json 2>/dev/null \
+STALL=90; CEILING=480   # seconds: max no-log-growth, then absolute ceiling
+LOGF=$(node "$CODEX_COMPANION" status "$JOB_ID" --json 2>/dev/null \
+  | uv run --no-project --python python3 python -c "import json,sys
+try: print((json.load(sys.stdin).get('job') or {}).get('logFile') or '')
+except Exception: print('')")
+last_change=$(date +%s); last_mtime=0; start=$(date +%s)
+while :; do
+  PSTATE=$(node "$CODEX_COMPANION" status "$JOB_ID" --json 2>/dev/null \
     | uv run --no-project --python python3 python -c "import json,sys
 try: print((json.load(sys.stdin).get('job') or {}).get('status') or 'unknown')
-except Exception: print('parse_error')" 2>/dev/null)
-  case "$STATE" in
-    completed)                  echo "READY @ iter=$i"; break ;;
-    failed|parse_error|unknown) echo "FAIL state=$STATE iter=$i"; break ;;
+except Exception: print('parse_error')")
+  case "$PSTATE" in
+    completed)                            echo "READY elapsed=$(($(date +%s)-start))s"; break ;;
+    failed|cancelled|parse_error|unknown) echo "FAIL state=$PSTATE"; break ;;
   esac
-  sleep 4
+  now=$(date +%s)
+  m=$( { [ -n "$LOGF" ] && stat -f %m "$LOGF" 2>/dev/null; } || { [ -n "$LOGF" ] && stat -c %Y "$LOGF" 2>/dev/null; } || echo 0 )
+  [ "$m" -gt "$last_mtime" ] && { last_mtime=$m; last_change=$now; }
+  [ $((now - last_change)) -ge "$STALL" ]   && { echo "STALLED no_log_growth=$((now-last_change))s"; break; }
+  [ $((now - start))       -ge "$CEILING" ] && { echo "CEILING elapsed=$((now-start))s"; break; }
+  sleep 15
 done
 ```
 
-Treat `parse_error`/`unknown` as failure (job vanished or broker unreachable) — do NOT continue spinning.
-Run this as `Bash(run_in_background=true, timeout=600000)`. Code reviews typically take 2–6 minutes; the 10-minute ceiling is the safety margin.
+Run this as `Bash(run_in_background=true, timeout=600000)` (background so `sleep` is allowed; the CEILING exits well before the bash timeout). Use `PSTATE`, never a variable named `status` (read-only in zsh). If `LOGF` came back empty (no `logFile` in the status JSON), the monitor degrades to status + CEILING only — still better than spinning blind. Code reviews typically take 2–6 minutes.
+
+**Outcome handling:**
+- `READY` → completion notification fired; fetch and act on the result below.
+- `FAIL` (`failed`/`cancelled`/`parse_error`/`unknown`) → genuine launch/broker failure; re-launch once synchronously per step 3 below.
+- `STALLED` / `CEILING` → the job went silent. Cancel it, then re-launch ONCE under the same monitor:
+  ```bash
+  node "$CODEX_COMPANION" cancel "$JOB_ID" --json 2>/dev/null || true
+  ```
+  If the re-launch also returns `STALLED`/`CEILING`/`FAIL`, do NOT spin a third time and do NOT silently skip: proceed WITHOUT the Codex pass and record the gap explicitly in the verification report and the Step 6.2 Not-Verified table (note how long it ran and when the log last advanced). Continue with the inline `/code-review` results for this iteration.
 
 1. **When (and ONLY when) the completion notification arrives**, fetch the findings via the companion's public interface:
 

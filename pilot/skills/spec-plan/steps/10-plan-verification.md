@@ -177,22 +177,40 @@ Then Read the file once. If not READY after 5 min, re-launch synchronously.
 
 The completion notification arrives automatically as a mid-turn tool-result-style event; you do not need to poll for it.
 
-**Wait for completion via bash polling**, NOT by reading the state file directly while waiting. The polling bash returns when the job's `status` flips to `completed`/`failed`, which triggers the completion notification.
+**Wait for completion via the active stall monitor** (NOT a status-only poll, and NOT by reading the state file directly while waiting). Broker `status` alone is not a liveness signal — a silent job keeps reporting `running`/`verifying` and a status-only loop burns its whole timeout. The monitor watches `job.logFile` mtime and returns the moment the job finishes OR stalls, triggering the completion notification.
 
 ```bash
 JOB_ID="<captured-task-id>"
-for i in $(seq 1 150); do
-  STATE=$(node "$CODEX_COMPANION" status "$JOB_ID" --json 2>/dev/null \
-    | uv run --no-project --python python3 python -c "import json,sys; print((json.load(sys.stdin).get('job') or {}).get('status') or '')")
-  case "$STATE" in
-    completed) echo "READY"; break ;;
-    failed)    echo "FAILED"; break ;;
+STALL=90; CEILING=480   # seconds: max no-log-growth, then absolute ceiling
+LOGF=$(node "$CODEX_COMPANION" status "$JOB_ID" --json 2>/dev/null \
+  | uv run --no-project --python python3 python -c "import json,sys
+try: print((json.load(sys.stdin).get('job') or {}).get('logFile') or '')
+except Exception: print('')")
+last_change=$(date +%s); last_mtime=0; start=$(date +%s)
+while :; do
+  PSTATE=$(node "$CODEX_COMPANION" status "$JOB_ID" --json 2>/dev/null \
+    | uv run --no-project --python python3 python -c "import json,sys
+try: print((json.load(sys.stdin).get('job') or {}).get('status') or 'unknown')
+except Exception: print('parse_error')")
+  case "$PSTATE" in
+    completed)                            echo "READY elapsed=$(($(date +%s)-start))s"; break ;;
+    failed|cancelled|parse_error|unknown) echo "FAIL state=$PSTATE"; break ;;
   esac
-  sleep 4
+  now=$(date +%s)
+  m=$( { [ -n "$LOGF" ] && stat -f %m "$LOGF" 2>/dev/null; } || { [ -n "$LOGF" ] && stat -c %Y "$LOGF" 2>/dev/null; } || echo 0 )
+  [ "$m" -gt "$last_mtime" ] && { last_mtime=$m; last_change=$now; }
+  [ $((now - last_change)) -ge "$STALL" ]   && { echo "STALLED no_log_growth=$((now-last_change))s"; break; }
+  [ $((now - start))       -ge "$CEILING" ] && { echo "CEILING elapsed=$((now-start))s"; break; }
+  sleep 15
 done
 ```
 
-Run this as `Bash(run_in_background=true, timeout=600000)`. Plan reviews typically take 1–4 minutes (no diff context to load); the 10-minute ceiling is a safety margin.
+Run this as `Bash(run_in_background=true, timeout=600000)` (background so `sleep` is allowed; the CEILING exits before the bash timeout). Use `PSTATE`, never a variable named `status` (read-only in zsh). If `LOGF` came back empty, the monitor degrades to status + CEILING only. Plan reviews typically take 1–4 minutes (no diff context to load).
+
+**Outcome handling:**
+- `READY` → fetch and act on the result below.
+- `FAIL` → genuine launch/broker failure; re-launch once synchronously per step 3 below.
+- `STALLED` / `CEILING` → the job went silent. Cancel it (`node "$CODEX_COMPANION" cancel "$JOB_ID" --json 2>/dev/null || true`), then re-launch ONCE under the same monitor. If the re-launch also returns `STALLED`/`CEILING`/`FAIL`, do NOT spin again and do NOT silently skip: proceed with the Claude reviewer results only and note the missing Codex pass before requesting approval.
 
 1. **When (and ONLY when) the completion notification arrives**, fetch the result via the companion's public interface:
 

@@ -52,7 +52,7 @@ Unlike the servers above, the C# language server is **not auto-installed** — i
 **Enable it:**
 
 1. Install the plugin from the [C# LSP plugin page](https://claude.com/plugins/csharp-lsp).
-2. Install the server: `dotnet tool install --global csharp-ls` (or `brew install csharp-ls`). Requires .NET SDK 6.0+.
+2. Install the server as a global .NET tool: `dotnet tool install --global csharp-ls`. Requires a compatible .NET SDK (see the [csharp-ls release notes](https://www.nuget.org/packages/csharp-ls) for the version your release needs).
 
 > With the LSP active you get the real-time compile diagnostics that the `file_checker.py` hook does not provide for C# — the hook runs a single-file `dotnet format` check only. Compile errors otherwise surface when you run `dotnet test`.
 

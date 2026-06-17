@@ -40,13 +40,15 @@ ANNOUNCEMENTS: list[dict[str, str]] = [
             "  - No more manual '/model ...' step between planning and implementation.\n"
             "  - Pilot sets the Opus Plan model in your settings.json, so new Claude sessions start on it automatically.\n\n"
             "What you need to do:\n"
-            "  - Run `/model opusplan` in this session (future sessions set this automatically).\n"
+            "  - Run `/model opusplan` in this session (future sessions set this automatically). For 1M\n"
+            "    context, enable it in Console -> Settings -> Spec Workflow -> Context Window and use\n"
+            "    `/model opusplan[1m]` (1M needs usage credits on Max; 200K is the default).\n"
             "  - The Opus Plan model runs Opus while planning (plan mode) and Sonnet for everything else.\n"
             "  - /spec now checks your model first: if you are not on opusplan it stops and reminds you\n"
             "    to run `/model opusplan` before planning (when Model Switching is OFF it requires Opus).\n\n"
             "To disable (run entire /spec workflow on Opus instead):\n"
             "  - Open the Pilot Console -> Settings -> Automation -> turn off 'Model Switching'.\n"
-            "  - Your settings.json will be patched to opus[1m] instead.\n\n"
+            "  - Your settings.json will be patched to plain `opus` (control 1M/200K yourself via /model).\n\n"
             "Docs: https://pilot-shell.com/docs/features/model-routing"
         ),
     },

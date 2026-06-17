@@ -94,3 +94,10 @@ Before reporting completion, pass against each of the five (2026 Agentic Coding 
 - **Tool misuse** — wrong tool for the job (Bash for file reads, MCP when CLI was simpler), or right tool with wrong params (Grep without escaping, Edit without reading first). Re-check `cli-tools.md` and `mcp-servers.md`.
 
 **Any mode flagged → fix and re-run, don't claim done.** Stop Signals and Evidence Before Claims are the during-work guards; Five Modes is the pre-completion checklist.
+
+### Over-Engineering & Shortcut Debt
+
+Beyond "does it work," check "is it the least that works" — run the ladder (`development-practices.md` → *Build the least that works*) over the diff before claiming done:
+
+- **Over-built?** An abstraction with one implementation, a dependency the stdlib/platform already covers, boilerplate nobody asked for, a config for a value that never changes → flag and simplify. This is the same lens as the native `/code-review` and `/simplify` skills; lean on them rather than re-deriving findings by hand.
+- **Shortcut debt harvested?** `grep -rnE '(#|//) ?SHORTCUT:' .` the change. Every `SHORTCUT:` marker introduced must name both a ceiling and an upgrade trigger; list unresolved markers in the completion report so a deferral can't quietly become permanent. A marker with no trigger is itself a finding.

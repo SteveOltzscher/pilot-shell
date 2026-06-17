@@ -327,3 +327,39 @@ class TestDotnetTddSuppression:
             "public class CheckoutFlowTests\n{\n    [Fact] public void Pays() { var o = new Order(); }\n}\n"
         )
         assert self._check(str(impl)) == ""
+
+    def test_file_inside_test_project_emits_no_reminder(self, tmp_path):
+        """A .cs file inside a .NET test project (MyApp.Tests) is itself test code - the
+        live TDD path must skip it, matching check_dotnet's project-name skip, even when
+        the file's own stem does not end in Tests/Test."""
+        proj = tmp_path / "MyApp.Tests"
+        proj.mkdir()
+        (proj / "MyApp.Tests.csproj").write_text("")
+        helper = proj / "TestHelpers.cs"
+        helper.write_text("namespace T;\npublic class TestHelpers\n{\n    public int Make() { return 1; }\n}\n")
+        assert self._check(str(helper)) == ""
+
+    def test_production_dir_with_test_in_name_still_enforces_tdd(self, tmp_path):
+        """A production directory named ContextTest (PascalCase) must NOT skip TDD
+        enforcement - only actual .NET test projects (with a .csproj) are exempt."""
+        ctx = tmp_path / "ContextTest"
+        ctx.mkdir()
+        impl = ctx / "OrderService.cs"
+        impl.write_text("namespace App;\npublic class OrderService\n{\n    public int Total() { return 1; }\n}\n")
+        assert "TDD Reminder" in self._check(str(impl))
+
+    def test_symbol_only_in_comment_does_not_suppress_reminder(self, tmp_path):
+        """A test that mentions the module only in a comment must NOT count as coverage -
+        the reference has to be in real code, not a `// TODO`."""
+        src = tmp_path / "src"
+        src.mkdir()
+        impl = src / "Invoice.cs"
+        impl.write_text("namespace App;\npublic class Invoice\n{\n    public int Total() { return 1; }\n}\n")
+        tests = tmp_path / "tests"
+        tests.mkdir()
+        (tests / "OtherTests.cs").write_text(
+            "using Xunit;\nnamespace T;\n"
+            "public class OtherTests\n{\n    // TODO: test Invoice later\n"
+            "    [Fact] public void Unrelated() { var x = 1; }\n}\n"
+        )
+        assert "TDD Reminder" in self._check(str(impl))

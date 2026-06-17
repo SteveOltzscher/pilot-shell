@@ -30,3 +30,7 @@ Zero failures. If anything broke that's not in the immediate neighbourhood of yo
 ### 5.3 Auto-fix re-run
 
 If lint/format/types auto-modified files in 5.1, re-run the suite to confirm those auto-fixes didn't break anything. (This is the only reason 5.2 might run twice.)
+
+### 5.4 Least-that-works check
+
+A bugfix should be the smallest change that resolves the root cause — run the ladder (`development-practices.md` → *Build the least that works*) over your diff and delete any abstraction, dependency, or boilerplate the fix didn't strictly need. If the fix ships a deliberate shortcut, it must carry a `SHORTCUT:` comment naming the ceiling and upgrade trigger; surface any such markers (and any pre-existing ones the fix touched: `git diff | grep -nE '(#|//) ?SHORTCUT:'`) in the finalise summary.

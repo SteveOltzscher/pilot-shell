@@ -18,6 +18,7 @@ from _checkers.tdd import (
     has_test_importing_module_ts,
     has_typescript_test_file,
     is_dotnet_logic_free,
+    is_inside_dotnet_test_project,
     is_test_file,
     is_trivial_edit,
     run_tdd_enforcer,
@@ -678,6 +679,28 @@ class TestIsDotnetLogicFree:
         path = self._write(tmp_path, "Greeter.cs", body)
         assert is_dotnet_logic_free(path) is False
 
+    def test_generic_class_with_new_constraint_is_logic_free(self, tmp_path: Path):
+        """A `where T : new()` constraint introduces a bare `()` whose `)` must not be
+        misread as a method body - a pure generic DTO stays logic-free."""
+        body = "namespace App;\npublic class Repo<T> where T : new()\n{\n    public T Item { get; set; }\n}\n"
+        path = self._write(tmp_path, "Repo.cs", body)
+        assert is_dotnet_logic_free(path) is True
+
+    def test_verbatim_interpolated_string_does_not_swallow_following_code(self, tmp_path: Path):
+        r"""`@$"...\"` is a verbatim-interpolated string; mis-parsing it as a regular
+        string would consume the closing quote (via `\"`) and swallow the trailing method
+        body, hiding real logic. The stripper must close it correctly so logic is seen."""
+        body = (
+            "namespace App;\n"
+            "public class Paths\n"
+            "{\n"
+            '    public string Root = @$"C:\\";\n'
+            "    public int Calc(int x) { return x + 1; }\n"
+            "}\n"
+        )
+        path = self._write(tmp_path, "Paths.cs", body)
+        assert is_dotnet_logic_free(path) is False
+
     # --- False: any logic signal keeps enforcement ---
 
     def test_class_with_method_body_enforces(self, tmp_path: Path):
@@ -795,3 +818,38 @@ class TestFindDotnetTestDirs:
 
         assert {"MyApp.Tests", "MyApp.Test", "IntegrationTests", "FooTest", "tests"} <= found
         assert found & {"latest", "contest", "greatest"} == set()
+
+
+class TestIsInsideDotnetTestProject:
+    """is_inside_dotnet_test_project: name heuristic + .csproj guard."""
+
+    def test_real_test_project_with_csproj_detected(self, tmp_path: Path) -> None:
+        proj = tmp_path / "MyApp.Tests"
+        proj.mkdir()
+        (proj / "MyApp.Tests.csproj").write_text("")
+        helper = proj / "TestHelpers.cs"
+        helper.write_text("")
+        assert is_inside_dotnet_test_project(str(helper)) is True
+
+    def test_production_dir_named_context_test_without_csproj_not_detected(self, tmp_path: Path) -> None:
+        """ContextTest ends with 'Test' in PascalCase but is a production domain folder."""
+        ctx = tmp_path / "ContextTest"
+        ctx.mkdir()
+        impl = ctx / "MyService.cs"
+        impl.write_text("")
+        assert is_inside_dotnet_test_project(str(impl)) is False
+
+    def test_integration_tests_dir_with_csproj_detected(self, tmp_path: Path) -> None:
+        proj = tmp_path / "IntegrationTests"
+        proj.mkdir()
+        (proj / "IntegrationTests.csproj").write_text("")
+        f = proj / "AuthTests.cs"
+        f.write_text("")
+        assert is_inside_dotnet_test_project(str(f)) is True
+
+    def test_file_with_no_test_project_ancestor_not_detected(self, tmp_path: Path) -> None:
+        src = tmp_path / "src" / "MyApp"
+        src.mkdir(parents=True)
+        impl = src / "OrderService.cs"
+        impl.write_text("")
+        assert is_inside_dotnet_test_project(str(impl)) is False

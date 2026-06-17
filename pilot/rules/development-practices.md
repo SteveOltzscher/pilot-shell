@@ -66,6 +66,25 @@ Grep/Glob: (1) verifying CodeGraph/Semble completeness, (2) exact text/regex in 
 - **Orphan cleanup.** Remove imports/vars/functions YOUR changes made unused. Don't touch pre-existing dead code — mention, don't delete.
 - **Self-check.** "Would a senior engineer call this overcomplicated?" If 200 lines could be 50, rewrite. Complexity is earned by actual requirements.
 
+<!-- The "build the least" ladder + deliberate-shortcut convention below are adapted from ponytail (MIT, © Dietrich Gebert): https://github.com/DietrichGebert/ponytail -->
+
+#### Build the least that works — the ladder
+
+Before writing code, stop at the **first rung that holds**. It's a reflex, not a research project — two rungs both work, take the higher one and move on.
+
+1. **Does this need to exist at all?** Speculative need → skip it, say so in one line. (YAGNI)
+2. **Standard library does it?** Use it.
+3. **Native platform feature covers it?** Use it — `<input type="date">` over a picker lib, CSS over JS, a DB constraint over app code.
+4. **Already-installed dependency solves it?** Use it. Never add a new dependency for what a few lines can do.
+5. **Can it be one line?** Make it one line.
+6. **Only then** write the minimum code that works.
+
+No unrequested abstractions (no interface with one implementation, no factory for one product, no config for a value that never changes), no boilerplate "for later," fewest files possible. Lazy means *less code, not the flimsier algorithm*: between two same-size stdlib options, take the one correct on edge cases.
+
+**Never simplify away** (these are not on the chopping block): trust-boundary input validation, error handling that prevents data loss, security, accessibility, and the calibration real hardware needs — a minimal model can't see that a real clock drifts or a sensor reads off. Anything the user explicitly asked for stays; if they want the full version, build it without re-arguing.
+
+- **Mark deliberate shortcuts.** When you intentionally ship a simplification with a known ceiling (global lock, O(n²) scan, naive heuristic), leave a `SHORTCUT:` comment naming the ceiling **and** the upgrade trigger: `# SHORTCUT: global lock, per-account locks if throughput matters`. A shortcut with no named trigger rots into "never" — name the trigger or don't take the shortcut. `grep -rnE '(#|//) ?SHORTCUT:' .` harvests the ledger; `/spec` and `/fix` verification surface unresolved markers (see `verification.md`).
+
 **⛔ Never invent values.** File paths, env var names/values, API keys, IDs (UUIDs, FK ids, third-party object ids), URLs, ports, hostnames, version numbers, third-party service names, function/class names not verified to exist, library API signatures — must be authoritatively confirmed (read the code, run the command, or ask). Pattern-matching a plausible value is the top cause of agent-introduced incidents per the 2026 Agentic Coding Trends Report. If unsure, **STOP and ask** — one round-trip beats a hallucination. See *Evidence Before Claims* in `verification.md`.
 
 ### Project Policies

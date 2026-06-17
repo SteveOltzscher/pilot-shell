@@ -231,19 +231,21 @@ def run_spec_mode_guard() -> int:
         cache_warn = (
             "\033[0;33m[Pilot] Warning: could not verify active model for /spec "
             "(statusline cache unavailable). Proceeding without the model check -- "
-            "if you are not on the opusplan model, run '/model opusplan' before planning.\033[0m\n"
+            "if you are not on the opusplan model, run '/model opusplan' "
+            "(or '/model opusplan[1m]' if you enabled the 1M context window) before planning.\033[0m\n"
         )
         block_reason = (
             "[Pilot] /spec with Model Switching ON requires the 'opusplan' model "
             "(planning runs on Opus, the default leg on Sonnet). Before planning it shows "
-            "as Sonnet -- you are on a different model. Run '/model opusplan' and try again. "
+            "as Sonnet -- you are on a different model. Run '/model opusplan' (or "
+            "'/model opusplan[1m]' for the 1M context window) and try again. "
             "(Resuming an existing plan with '/spec <path/to/plan.md>' is allowed on any model.)"
         )
         block_stderr = (
             "\033[0;31m[Pilot] /spec blocked: Model Switching is ON, so /spec must run on the "
             "opusplan model (shows as Sonnet before planning). Current model: "
             + (active_model or "unknown")
-            + ". Run '/model opusplan'.\033[0m\n"
+            + ". Run '/model opusplan' (or '/model opusplan[1m]' for 1M).\033[0m\n"
         )
     else:
         model_is_correct = _is_opus

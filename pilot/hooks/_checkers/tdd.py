@@ -169,6 +169,23 @@ def is_dotnet_test_project_name(name: str) -> bool:
     return name.lower().endswith((".tests", ".test")) or name.endswith(("Tests", "Test"))
 
 
+def is_inside_dotnet_test_project(file_path: "str | Path") -> bool:
+    """True if *file_path* is nested inside an actual .NET test-project directory.
+
+    Combines the name heuristic with a ``.csproj`` presence check to avoid
+    suppressing enforcement for production directories that coincidentally end
+    with 'Test' in PascalCase (e.g. ``ContextTest``, ``LoadTest``).  Every
+    modern .NET project directory contains its own ``*.csproj``; a production
+    folder with a test-sounding name typically does not.
+    """
+    p = Path(file_path)
+    for i in range(1, len(p.parts)):
+        candidate = Path(*p.parts[:i])
+        if is_dotnet_test_project_name(candidate.name) and any(candidate.glob("*.csproj")):
+            return True
+    return False
+
+
 @functools.lru_cache(maxsize=128)
 def _find_dotnet_test_dirs(start: Path) -> list[Path]:
     """Walk up from start to find common .NET test directories/projects.
@@ -414,7 +431,9 @@ def has_test_importing_module_dotnet(impl_path: str) -> bool:
                 continue
             if not test_attr_re.search(src):
                 continue
-            if symbol_re.search(src):
+            # Strip comments/strings so a mention of the symbol in a `// TODO`
+            # comment or a string literal does not count as a real reference.
+            if symbol_re.search(_strip_cs_comments_and_strings(src)):
                 return True
 
     return False
@@ -443,9 +462,10 @@ def _strip_cs_comments_and_strings(src: str) -> str:
             j = src.find("*/", i + 2)
             i = n if j == -1 else j + 2
             continue
-        # Verbatim string @"..." with doubled "" escapes
-        if c == "@" and i + 1 < n and src[i + 1] == '"':
-            i += 2
+        # Verbatim string @"..." or verbatim-interpolated @$"..." with doubled "" escapes.
+        # ($@"..." is handled by the regular-string branch below after the leading $.)
+        if c == "@" and i + 1 < n and (src[i + 1] == '"' or (src[i + 1] == "$" and i + 2 < n and src[i + 2] == '"')):
+            i += 2 if src[i + 1] == '"' else 3
             while i < n:
                 if src[i] == '"':
                     if i + 1 < n and src[i + 1] == '"':
@@ -545,6 +565,11 @@ def is_dotnet_logic_free(impl_path: str) -> bool:
     # initializer strip, an idiomatic DTO with a braced collection/object initializer
     # (`= new() { 1, 2 }`) would false-match ')' '{' and be wrongly enforced.
     body_code = _CS_INITIALIZER_CALL.sub(" ", _CS_PRIMARY_CTOR.sub(" ", code))
+    # A `where T : new()` generic constraint introduces a bare `()` whose `)` would
+    # otherwise false-match the ')''{' body check below (`class C<T> where T : new() {`).
+    # Initializer `new()` (`= new()`) is already stripped above, so a remaining bare
+    # `new()` is only a constraint - safe to drop.
+    body_code = re.sub(r"\bnew\s*\(\s*\)", " ", body_code)
     if re.search(r"\)\s*(?:where\b[^{}]*)?\{", body_code):
         return False
 
@@ -687,6 +712,11 @@ def run_tdd_enforcer() -> int:
         )
 
     if file_path.endswith((".cs", ".razor")):
+        # A file inside a .NET test project (MyApp.Tests, IntegrationTests, ...) is
+        # itself test code - skip, matching check_dotnet's format-path behaviour.
+        if is_inside_dotnet_test_project(file_path):
+            return 0
+
         if has_dotnet_test_file(file_path):
             return 0
 

@@ -12,6 +12,20 @@ test -d "$SESS_DIR" && find "$SESS_DIR" -maxdepth 1 -name 'findings-spec-review-
 test -d "$SESS_DIR" && find "$SESS_DIR" -maxdepth 1 -name 'findings-changes-review-*.json' -delete
 ```
 
+### 1b: Stage the change's files (always run, before ANY reviewer launches)
+
+The implementation phase does not commit, so the work sits in the WORKING TREE — modified files plus brand-new untracked ones (new modules, pages, tests). A review of that unstaged tree misfires both ways: a reviewer that reads `git status --untracked-files=all` reports a spurious `critical` ("deliverable depends on untracked files"), while a reviewer that reads only `git diff HEAD` silently OMITS the new files, so they go unreviewed. Fix both at once by staging the change's own files with a **real `git add`** before any reviewer launches below:
+
+```bash
+# Stage ONLY the plan's files (the paths from each task's `Files:` block) plus any
+# documented deviations — NOT unrelated dirty or untracked files.
+git add <path/from/plan/Files-block-1> <path/from/plan/Files-block-2> ...
+# Sanity check: anything still untracked must NOT be part of this change.
+git status --short --untracked-files=all | grep '^??' || true
+```
+
+A bare `git add -N` (intent-to-add) is NOT enough — `git status` still treats the path as untracked and a later `git commit` can record empty content. Use a real `git add`. **Staging is not committing** — the commit still waits for the review, doc-sync, and (Phase B) the worktree sync; `git add` is pre-authorized, the push is not. All reviewers below scope to `git diff HEAD` (which now includes the staged additions); never narrow to a committed ref-range, which is empty pre-commit.
+
 ---
 
 <!-- CC-ONLY -->

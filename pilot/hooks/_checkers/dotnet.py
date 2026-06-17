@@ -10,7 +10,7 @@ from pathlib import Path
 
 from _lib.util import BLUE, NC, check_file_length
 
-from _checkers.tdd import is_dotnet_test_project_name, should_skip
+from _checkers.tdd import is_inside_dotnet_test_project, should_skip
 
 DOTNET_EXTENSIONS = {".cs", ".razor"}
 DEBUG = os.environ.get("HOOK_DEBUG", "").lower() == "true"
@@ -52,9 +52,10 @@ def check_dotnet(file_path: Path) -> tuple[int, str]:
     if stem.endswith("Tests") or stem.endswith("Test"):
         return 0, ""
     # Skip files inside a .NET test project (MyApp.Tests, IntegrationTests, …).
-    # Same predicate as _find_dotnet_test_dirs so skip and discovery agree; a
-    # path-segment match avoids over-skipping siblings like MyApp.TestData.
-    if any(is_dotnet_test_project_name(part) for part in file_path.parts):
+    # Uses is_inside_dotnet_test_project rather than a bare name-only predicate
+    # so that production directories coincidentally ending with 'Test'
+    # (e.g. ContextTest, LoadTest) are not mistakenly skipped.
+    if is_inside_dotnet_test_project(file_path):
         return 0, ""
 
     length_warning = check_file_length(file_path)
@@ -73,17 +74,12 @@ def check_dotnet(file_path: Path) -> tuple[int, str]:
     if not dotnet_bin:
         return 0, length_warning
 
-    has_issues, results = _run_dotnet_format(dotnet_bin, project_root, file_path)
-
-    if has_issues:
-        parts = []
-        for tool_name, (count, _) in results.items():
-            label = "issue" if count == 1 else "issues"
-            parts.append(f"{count} {tool_name} {label}")
-        reason = f"Dotnet: {', '.join(parts)} in {file_path.name}"
-        details = _format_dotnet_issues(file_path, results)
-        if details:
-            reason = f"{reason}\n{details}"
+    # The check is scoped to this one file via --include, so a positive result
+    # always means exactly this file needs whitespace formatting. There is no need
+    # to parse or count tool output (which is empty at --verbosity q anyway, and
+    # whose non-path warning lines would otherwise be miscounted as issues).
+    if _run_dotnet_format(dotnet_bin, project_root, file_path):
+        reason = f"Dotnet: {file_path.name} has whitespace issues (run `dotnet format`)"
         if length_warning:
             reason = f"{reason}\n{length_warning}"
         return 0, reason
@@ -95,10 +91,13 @@ def _run_dotnet_format(
     dotnet_bin: str,
     project_root: Path,
     file_path: Path,
-) -> tuple[bool, dict[str, tuple]]:
-    """Run `dotnet format whitespace --folder` scoped to the edited file and collect results."""
-    has_issues = False
-    results: dict[str, tuple] = {}
+) -> bool:
+    """Run `dotnet format whitespace --folder` scoped to the edited file.
+
+    Returns True iff the file needs whitespace formatting (exit code 2). Tool
+    failures (exit 1/3/4) and timeouts are swallowed and reported as False, so a
+    misconfigured environment never mislabels its error text as a whitespace issue.
+    """
     try:
         # `whitespace --folder` skips the MSBuild project load, restore, and analyzer
         # compilation (the dominant per-edit cost) while still applying .editorconfig
@@ -132,50 +131,15 @@ def _run_dotnet_format(
         )
         debug_log(f"Format exit code: {result.returncode}")
 
-        # Exit 2 = files need formatting. Any other non-zero code is a real tool
-        # failure (1 = unhandled exception, 3 = MSBuild not found); swallow it
-        # like a timeout instead of mislabeling its error text as whitespace issues.
+        # Exit 2 = file needs formatting. Any other non-zero code is a real tool
+        # failure (1 = unhandled exception, 3 = MSBuild not found, 4 = .NET CLI not
+        # found); swallow it like a timeout instead of mislabeling it as an issue.
         if result.returncode == _FORMAT_CHANGES_NEEDED:
-            output = result.stdout + result.stderr
-            # Collect filenames that need formatting
-            format_lines = [
-                line.strip()
-                for line in output.splitlines()
-                if line.strip() and not line.strip().startswith("The dotnet format command")
-            ]
-            if format_lines:
-                has_issues = True
-                results["format"] = (len(format_lines), format_lines)
-            else:
-                # Changes needed but no specific lines (quiet verbosity) — still report.
-                has_issues = True
-                results["format"] = (1, ["Code formatting issues detected"])
-        elif result.returncode != 0:
+            return True
+        if result.returncode != 0:
             debug_log(f"dotnet format failed (exit {result.returncode}); not reporting as issues")
     except subprocess.TimeoutExpired:
         debug_log("Format check timed out")
     except (OSError, subprocess.SubprocessError) as exc:
         debug_log(f"Format check failed to run: {exc}")
-    return has_issues, results
-
-
-def _format_dotnet_issues(file_path: Path, results: dict[str, tuple]) -> str:
-    """Format .NET diagnostic issues as plain text."""
-    lines: list[str] = []
-    try:
-        display_path = file_path.relative_to(Path.cwd())
-    except ValueError:
-        display_path = file_path
-    lines.append(f".NET Issues found in: {display_path}")
-
-    if "format" in results:
-        count, format_lines = results["format"]
-        plural = "issue" if count == 1 else "issues"
-        lines.append(f"Format: {count} whitespace {plural} (run `dotnet format`)")
-        for line in format_lines[:10]:
-            lines.append(f"  {line}")
-        if count > 10:
-            lines.append(f"  ... and {count - 10} more")
-
-    lines.append("Fix .NET issues above before continuing")
-    return "\n".join(lines)
+    return False
