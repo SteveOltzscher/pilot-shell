@@ -21,7 +21,7 @@ const faqItems = [
   {
     question: "Does Pilot Shell work with any programming language?",
     answer:
-      "Pilot Shell's quality hooks (auto-formatting, linting, type checking) currently support Python, TypeScript/JavaScript, and Go out of the box. TDD enforcement, spec-driven development, persistent memory, context optimization, and all rules and standards work with any language. You can add custom hooks for additional languages.",
+      "Pilot Shell's quality hooks (auto-formatting, linting, type checking) currently support Python, TypeScript/JavaScript, and Go out of the box, plus a single-file dotnet format whitespace check for C#. TDD enforcement, spec-driven development, persistent memory, context optimization, and all rules and standards work with any language. You can add custom hooks for additional languages.",
   },
   {
     question: "Can I use Pilot Shell on multiple different projects?",

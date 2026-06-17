@@ -33,7 +33,7 @@ const insideItems: InsideItem[] = [
     title: "Context Engineering",
     description: "Keep your context window lean",
     summary:
-      "Curated rules for best practices, TDD, debugging, and verification. Language- and architecture-specific standards for Python, TypeScript, Go, frontend, and backend \u2014 modular, only what\u2019s relevant loads.",
+      "Curated rules for best practices, TDD, debugging, and verification. Language- and architecture-specific standards for Python, TypeScript, Go, .NET, Blazor, frontend, and backend \u2014 modular, only what\u2019s relevant loads.",
     href: "/docs/features/context-optimization",
   },
   {
@@ -41,7 +41,7 @@ const insideItems: InsideItem[] = [
     title: "Hooks & Quality",
     description: "Deterministic checks on every edit",
     summary:
-      "Auto-lint, format, and type-check on every file edit across Python, TypeScript, and Go. The TDD enforcer flags implementations that land without a failing test in place first — quality gates run before code reaches your branch.",
+      "Auto-lint, format, and type-check on every file edit across Python, TypeScript, and Go, plus single-file formatting for C#. The TDD enforcer flags implementations that land without a failing test in place first — quality gates run before code reaches your branch.",
     href: "/docs/features/hooks",
   },
   {

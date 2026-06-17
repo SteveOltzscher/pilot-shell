@@ -83,7 +83,7 @@ const Index = () => {
     <>
       <SEO
         title="Pilot Shell — How real engineers run Claude Code and Codex"
-        description="How real engineers run Claude Code and Codex: spec-driven planning, enforced TDD, persistent memory, and quality hooks for Python, TypeScript, and Go. Make your agents production-ready."
+        description="How real engineers run Claude Code and Codex: spec-driven planning, enforced TDD, persistent memory, and quality hooks for Python, TypeScript, Go, and C#. Make your agents production-ready."
         structuredData={[
           websiteStructuredData,
           breadcrumbStructuredData,
