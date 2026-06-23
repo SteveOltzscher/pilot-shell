@@ -59,6 +59,22 @@ For every user-facing path the change touches, you MUST: snapshot → **click th
 
 Any "no" → not verified. Say so explicitly; do not claim done.
 
+### Design-Quality Detector (best-effort, advisory)
+
+After the browser E2E passes, run the `impeccable detect` design anti-pattern detector on the changed UI for a deterministic, no-API-key signal (overused fonts, gray-on-color text, side-tab borders, purple gradients, layout-thrash transitions, and similar AI-generated-design tells). **Best-effort means run-when-available, not discretionary:** when `impeccable` is on PATH and you have a bounded UI target, run it — skip (with a one-line note) only when the binary is absent or no concrete target exists. The **findings** are advisory and non-blocking — suggestions, never a verification failure or a reason to withhold "done".
+
+**Invocation contract (follow exactly — `impeccable detect` is a linter):**
+
+```bash
+which impeccable >/dev/null 2>&1 || echo "impeccable not installed — skip design check"
+impeccable detect --json <explicit-changed-ui-files-or-rendered-output> || true
+```
+
+- **Decide from the JSON, not the exit code.** `impeccable detect` exits `0` when clean and `2` when it finds something — both mean it ran successfully; parse stdout JSON for findings. Treat only a missing binary, a non-0/non-2 exit, or unparseable output as "could not run" → record a one-line skip note and move on.
+- **Bound the target.** Pass only the explicit changed UI files, or one narrowly-scoped built-output directory. Never point it at the repo root or cwd (directory mode walks every file and builds an import graph — it can hang). Run it under a timeout; on timeout or oversize, record a skip note rather than waiting.
+- **Scan rendered output, not a client-rendered SPA's static shell.** A Vite/React/SPA `index.html` is a near-empty shell — scanning it undercounts badly. For SSG/SSR builds (Docusaurus, Astro, Next static) scan the built HTML directly; for an SPA, scan the rendered DOM you already have from the E2E browser (save the live page's HTML, then `impeccable detect` that file), or record a skip note.
+- **Vendored noise:** findings on third-party UI primitives (e.g. a `components/ui/**` shadcn tree) are expected. A project that wants them suppressed can add a `.impeccable/config.json` `detector.ignoreFiles` entry; do not create that config automatically.
+
 ### Common Workflow Shape (all tools)
 
 1. Get current state (tab/page/snapshot)

@@ -32,7 +32,7 @@ Run `/setup-rules` (or `$setup-rules` on Codex) to generate project-specific rul
 ### Tooling & Context (3 rules)
 
 - `cli-tools.md` — Pilot CLI, Semble hybrid code search, RTK token optimization
-- `browser-automation.md` — Browser automation for E2E UI testing (Chrome → Chrome DevTools MCP → playwright-cli → agent-browser)
+- `browser-automation.md` — Browser automation for E2E UI testing (Chrome → Chrome DevTools MCP → playwright-cli → agent-browser), plus an optional advisory [impeccable](https://impeccable.style) design anti-pattern check (`impeccable detect`, deterministic, no API key) on changed UI
 - `mcp-servers.md` — MCP server reference and tool selection guidance
 
 ## Coding Standards — Activated by File Type

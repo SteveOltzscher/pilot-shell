@@ -20,6 +20,7 @@ Unit tests and typechecks are NOT sufficient for UI changes. After tests pass, v
 2. Pick a browser tool (see `browser-automation.md` for tier priority and detection).
 3. Navigate to the affected page, interact with the changed UI, verify correct behavior.
 4. Report what you saw — "UI works" requires browser evidence, not "tests pass."
+5. **Design-quality pass (best-effort):** when `impeccable` is on PATH, run the deterministic design anti-pattern detector on the changed UI — `impeccable detect --json <changed-ui-or-rendered-output> || true` (see the "Design-Quality Detector" section in `browser-automation.md` for the full contract). Run-when-available, not discretionary; the findings are advisory only — suggestions, never a completion blocker — and a missing binary is a clean skip.
 
 **Don't skip.** "Small CSS change" or "tests cover it" is not an excuse. Common pitfalls: stale cached bundles, bundle not deployed, CSS layout invisible to tests, elements in DOM but not visible/interactive.
 

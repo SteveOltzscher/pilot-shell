@@ -701,6 +701,25 @@ def install_prettier() -> bool:
     return True
 
 
+def install_impeccable() -> bool:
+    """Install or upgrade the impeccable design anti-pattern detector (manifest-pinned).
+
+    Best-effort: a failed install returns False (omitted from the install summary)
+    but never aborts the dependencies step. The pinned `impeccable detect` CLI
+    powers the optional, non-blocking design-quality gate in frontend verification.
+    The default --ignore-scripts policy skips the optional puppeteer/Chromium
+    postinstall, so this stays a light single npm install (no browser download).
+    """
+    was_present = command_exists("impeccable")
+    if not _run_bash_with_retry(
+        _npm_install_cmd(manifest_get("impeccable")),
+        timeout=GLOBAL_NPM_INSTALL_TIMEOUT,
+    ):
+        return False
+    _record_outcome(_OUTCOME_UPDATED if was_present else _OUTCOME_INSTALLED)
+    return True
+
+
 def _install_go_via_apt() -> bool:
     """Install Go and gopls via apt on Linux."""
     import platform
@@ -1679,6 +1698,7 @@ class DependenciesStep(BaseStep):
                 _InstallTask("Plugin dependencies", "plugin_deps", _install_plugin_dependencies, (ctx.project_dir, ui)),
                 _InstallTask("vtsls (TypeScript LSP server)", "typescript_lsp", install_typescript_lsp),
                 _InstallTask("prettier (TypeScript formatter)", "prettier", install_prettier),
+                _InstallTask("impeccable (design detector)", "impeccable", install_impeccable),
                 _InstallTask("golangci-lint (Go linter)", "golangci_lint", install_golangci_lint),
                 _InstallTask("PBT tools (hypothesis, fast-check)", "pbt_tools", install_pbt_tools),
                 _InstallTask("Semble (code search)", "semble", install_semble),

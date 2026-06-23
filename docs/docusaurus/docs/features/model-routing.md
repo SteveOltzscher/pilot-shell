@@ -76,7 +76,7 @@ Switch back to `opusplan` before the next `/spec` run:
 
 ## Turning It Off -- Opus Everywhere
 
-Turn off **Model Switching** in Console Settings -> Automation to run the entire `/spec` workflow on Opus. Pilot then patches `~/.claude/settings.json` to plain `opus` and **does not manage the context window** -- you choose 1M or 200K yourself via `/model` (e.g. `/model opus[1m]`). Plan -> implement -> verify all run on Opus. Choose this if you prefer maximum reasoning quality over cost, or for headless / CI runs.
+Turn off **Model Switching** in Console Settings -> Automation to run the entire `/spec` workflow on Opus. Pilot then defaults `~/.claude/settings.json` to plain `opus` and **does not manage the context window** -- you choose 1M or 200K yourself via `/model` (e.g. `/model opus[1m]`), and Pilot **preserves that choice across restarts**: it never writes an `ANTHROPIC_MODEL` pin, which (env) would outrank the saved `model` field and silently reset your selection to 200K on the next launch. Plan -> implement -> verify all run on Opus. Choose this if you prefer maximum reasoning quality over cost, or for headless / CI runs.
 
 ## Context Window
 

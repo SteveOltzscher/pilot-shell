@@ -69,6 +69,18 @@ entries:
     version: "4.8.0"
     last_audited: "2026-06-16"
 
+  - id: impeccable
+    name: "impeccable (design anti-pattern detector)"
+    source_type: npm
+    source_url: impeccable
+    version: "3.1.0"
+    # Apache-2.0. Deterministic frontend design anti-pattern detector; the
+    # `impeccable detect` CLI runs the design-quality gate (no LLM, no API key).
+    # Optional puppeteer dep (URL scanning) is skipped by the default
+    # --ignore-scripts policy, so the install stays light (no Chromium download).
+    # node-compat: tested on Node 22 (engines >=24; re-verify on Node 22 before bumping version)
+    last_audited: "2026-06-23"
+
   - id: agent-browser
     name: agent-browser
     source_type: npm
